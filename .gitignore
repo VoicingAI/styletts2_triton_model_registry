@@ -4,3 +4,4 @@ raw_models/
 triton_repos/
 __pycache__/
 .vscode/
+.env
