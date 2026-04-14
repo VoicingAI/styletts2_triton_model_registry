@@ -1,0 +1,15 @@
+name: "generator"
+backend: "tensorrt"
+max_batch_size: 0
+
+input [
+    { name: "X_OUT",   data_type: TYPE_FP32, dims: [ -1, 512, -1 ] },
+    { name: "F0_PRED",   data_type: TYPE_FP32, dims: [ -1, -1 ] },
+    { name: "REF",   data_type: TYPE_FP32, dims: [ -1, 128 ] }
+]
+
+output [
+    { name: "AUDIO_OUT",   data_type: TYPE_FP32, dims: [ -1, 1, -1 ] }
+]
+
+instance_group [ { kind: KIND_GPU, count: 1} ]

@@ -1,0 +1,524 @@
+{
+  "tara": {
+    "model_id": "Neeti",
+    "config": "prodttsmodels/neeti/config_ft.yml",
+    "model": "prodttsmodels/neeti/model.pth",
+    "reference": "prodttsmodels/neeti/reference.wav"
+  },
+  "tara_hi": {
+    "model_id": "Neeti_Hi",
+    "config": "prodttsmodels/neeti-hindi/config_ft.yml",
+    "model": "prodttsmodels/neeti-hindi/model.pth",
+    "reference": "prodttsmodels/neeti-hindi/reference.wav"
+  },
+  "tara_en": {
+    "model_id": "Neeti_Eng",
+    "config": "prodttsmodels/neeti-eng/config_ft.yml",
+    "model": "prodttsmodels/neeti-eng/model.pth",
+    "reference": "prodttsmodels/neeti-eng/reference.wav"
+  },
+  "abby": {
+    "model_id": "americanf-V1",
+    "config": "prodttsmodels/americanf-v1/config_ft.yml",
+    "model": "prodttsmodels/americanf-v1/model.pth",
+    "reference": "prodttsmodels/americanf-v1/reference.wav"
+  },
+  "sam": {
+    "model_id": "MexicanSpanish",
+    "config": "prodttsmodels/mexican/config_ft.yml",
+    "model": "prodttsmodels/mexican/model.pth",
+    "reference": "prodttsmodels/mexican/reference.wav"
+  },
+  "peter": {
+    "model_id": "Andrew-V1",
+    "config": "prodttsmodels/andrew/config_ft.yml",
+    "model": "prodttsmodels/andrew/model.pth",
+    "reference": "prodttsmodels/andrew/reference.wav"
+  },
+  "amber": {
+    "model_id": "Clarissa-V1",
+    "config": "prodttsmodels/clarissa/config_ft.yml",
+    "model": "prodttsmodels/clarissa/model.pth",
+    "reference": "prodttsmodels/clarissa/reference.wav"
+  },
+  "arya": {
+    "model_id": "Kat-V2",
+    "config": "prodttsmodels/kat/config_ft.yml",
+    "model": "prodttsmodels/kat/model.pth",
+    "reference": "prodttsmodels/kat/reference.wav"
+  },
+  "jimmy": {
+    "model_id": "MathewN",
+    "config": "prodttsmodels/mathew/config_ft.yml",
+    "model": "prodttsmodels/mathew/model.pth",
+    "reference": "prodttsmodels/mathew/reference.wav"
+  },
+  "vikram": {
+    "model_id": "SachinEnglish",
+    "config": "prodttsmodels/sachinenglish/config_ft.yml",
+    "model": "prodttsmodels/sachinenglish/model.pth",
+    "reference": "prodttsmodels/sachinenglish/reference.wav"
+  },
+  "arjun": {
+    "model_id": "SachinHindi",
+    "config": "prodttsmodels/sachinhindi/config_ft.yml",
+    "model": "prodttsmodels/sachinhindi/model.pth",
+    "reference": "prodttsmodels/sachinhindi/reference.wav"
+  },
+  "priya": {
+    "model_id": "Vaishali",
+    "config": "prodttsmodels/vaishali/config_ft.yml",
+    "model": "prodttsmodels/vaishali/model.pth",
+    "reference": "prodttsmodels/vaishali/reference.wav"
+  },
+  "riley": {
+    "model_id": "Alex",
+    "config": "prodttsmodels/alex/config_ft.yml",
+    "model": "prodttsmodels/alex/model.pth",
+    "reference": "prodttsmodels/alex/reference.wav"
+  },
+  "isabela": {
+    "model_id": "SpanishV2",
+    "config": "prodttsmodels/spanish/config_ft.yml",
+    "model": "prodttsmodels/spanish/model.pth",
+    "reference": "prodttsmodels/spanish/reference_ana.wav"
+  },
+  "manuela": {
+    "model_id": "SpanishV2",
+    "config": "prodttsmodels/spanish/config_ft.yml",
+    "model": "prodttsmodels/spanish/model.pth",
+    "reference": "prodttsmodels/spanish/reference_manu.wav"
+  },
+  "armin": {
+    "model_id": "Multilingual",
+    "config": "prodttsmodels/multilingual/config_ft.yml",
+    "model": "prodttsmodels/multilingual/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_de_m.wav"
+  },
+  "amelie": {
+    "model_id": "Multilingual",
+    "config": "prodttsmodels/multilingual/config_ft.yml",
+    "model": "prodttsmodels/multilingual/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_de_f.wav"
+  },
+  "leonie": {
+    "model_id": "Multilingual",
+    "config": "prodttsmodels/multilingual/config_ft.yml",
+    "model": "prodttsmodels/multilingual/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_de_f2.wav"
+  },
+  "melina": {
+    "model_id": "Multilingual",
+    "config": "prodttsmodels/multilingual/config_ft.yml",
+    "model": "prodttsmodels/multilingual/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_el_f.wav"
+  },
+  "marios": {
+    "model_id": "Multilingual",
+    "config": "prodttsmodels/multilingual/config_ft.yml",
+    "model": "prodttsmodels/multilingual/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_el_m.wav"
+  },
+  "jack": {
+    "model_id": "Multilingual",
+    "config": "prodttsmodels/multilingual/config_ft.yml",
+    "model": "prodttsmodels/multilingual/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_en_m.wav"
+  },
+  "camila": {
+    "model_id": "Multilingual",
+    "config": "prodttsmodels/multilingual/config_ft.yml",
+    "model": "prodttsmodels/multilingual/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_es_f.wav"
+  },
+  "marco": {
+    "model_id": "Multilingual",
+    "config": "prodttsmodels/multilingual/config_ft.yml",
+    "model": "prodttsmodels/multilingual/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_es_m.wav"
+  },
+  "joonas": {
+    "model_id": "Multilingual",
+    "config": "prodttsmodels/multilingual/config_ft.yml",
+    "model": "prodttsmodels/multilingual/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_fi_m.wav"
+  },
+  "evan": {
+    "model_id": "Multilingual",
+    "config": "prodttsmodels/multilingual/config_ft.yml",
+    "model": "prodttsmodels/multilingual/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_fr_m.wav"
+  },
+  "emma": {
+    "model_id": "Multilingual",
+    "config": "prodttsmodels/multilingual/config_ft.yml",
+    "model": "prodttsmodels/multilingual/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_fr_f.wav"
+  },
+  "sofia": {
+    "model_id": "Multilingual",
+    "config": "prodttsmodels/multilingual/config_ft.yml",
+    "model": "prodttsmodels/multilingual/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_it_f.wav"
+  },
+  "leonardo": {
+    "model_id": "Multilingual",
+    "config": "prodttsmodels/multilingual/config_ft.yml",
+    "model": "prodttsmodels/multilingual/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_it_m.wav"
+  },
+  "bruno": {
+    "model_id": "Multilingual",
+    "config": "prodttsmodels/multilingual/config_ft.yml",
+    "model": "prodttsmodels/multilingual/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_pt_m.wav"
+  },
+  "maria": {
+    "model_id": "Multilingual",
+    "config": "prodttsmodels/multilingual/config_ft.yml",
+    "model": "prodttsmodels/multilingual/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_pt_f.wav"
+  },
+  "elena": {
+    "model_id": "Multilingual",
+    "config": "prodttsmodels/multilingual/config_ft.yml",
+    "model": "prodttsmodels/multilingual/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_ru_f.wav"
+  },
+  "maxim": {
+    "model_id": "Multilingual",
+    "config": "prodttsmodels/multilingual/config_ft.yml",
+    "model": "prodttsmodels/multilingual/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_ru_m.wav"
+  },
+  "stella": {
+    "model_id": "Multilingual",
+    "config": "prodttsmodels/multilingual/config_ft.yml",
+    "model": "prodttsmodels/multilingual/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_sw_f.wav"
+  },
+  "liam": {
+    "model_id": "Multilingual",
+    "config": "prodttsmodels/multilingual/config_ft.yml",
+    "model": "prodttsmodels/multilingual/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_sw_m.wav"
+  },
+  "ross": {
+    "model_id": "NewData12",
+    "config": "prodttsmodels/newdata12/config_ft.yml",
+    "model": "prodttsmodels/newdata12/model.pth",
+    "reference": "prodttsmodels/newdata12/reference.wav"
+  },
+  "nisha": {
+    "model_id": "mary-v1",
+    "config": "prodttsmodels/mary-v1/config_ft.yml",
+    "model": "prodttsmodels/mary-v1/model.pth",
+    "reference": "prodttsmodels/mary-v1/reference.wav"
+  },
+  "nisha_hi": {
+    "model_id": "mary-hindi-v3",
+    "config": "prodttsmodels/mary-hindi-v3/config_ft.yml",
+    "model": "prodttsmodels/mary-hindi-v3/model.pth",
+    "reference": "prodttsmodels/mary-hindi-v3/reference.wav"
+  },
+  "nisha_hi_v2": {
+    "model_id": "mary-hindi-v3",
+    "config": "prodttsmodels/mary-hindi-v3/config_ft.yml",
+    "model": "prodttsmodels/mary-hindi-v3/model.pth",
+    "reference": "prodttsmodels/mary-v1/reference.wav"
+  },
+  "nisha_multi_v2": {
+    "model_id": "marymultiv2",
+    "config": "prodttsmodels/marymulti11-v2/config_ft.yml",
+    "model": "prodttsmodels/marymulti11-v2/model.pth",
+    "reference": "prodttsmodels/marymulti11/reference1.wav"
+  },
+  "alice": {
+    "model_id": "tania-v2",
+    "config": "prodttsmodels/tania-v2/config_ft.yml",
+    "model": "prodttsmodels/tania-v2/model.pth",
+    "reference": "prodttsmodels/tania-v2/reference.wav"
+  },
+  "pruned_test": {
+    "model_id": "pruned_test",
+    "config": "prodttsmodels/pruned/config_pruned.yml",
+    "model": "prodttsmodels/pruned/epoch_2nd_00044_pruned.pth",
+    "reference": "prodttsmodels/pruned/audio_ref_male.wav"
+  },
+  "aurelie": {
+    "model_id": "frenchnew",
+    "config": "prodttsmodels/frenchnew/config_ft.yml",
+    "model": "prodttsmodels/frenchnew/model.pth",
+    "reference": "prodttsmodels/frenchnew/reference.wav"
+  },
+  "andrea": {
+    "model_id": "germannew",
+    "config": "prodttsmodels/germannew/config_ft.yml",
+    "model": "prodttsmodels/germannew/model.pth",
+    "reference": "prodttsmodels/germannew/reference.wav"
+  },
+  "evelyn": {
+    "model_id": "female11",
+    "config": "prodttsmodels/female11/config_ft.yml",
+    "model": "prodttsmodels/female11/model.pth",
+    "reference": "prodttsmodels/female11/reference.wav"
+  },
+  "armin_mini": {
+    "model_id": "Multilingual_mini",
+    "config": "prodttsmodels/pruned/config_pruned.yml",
+    "model": "pruned_multispeaker/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_de_m.wav"
+  },
+  "amelie_mini": {
+    "model_id": "Multilingual_mini",
+    "config": "prodttsmodels/pruned/config_pruned.yml",
+    "model": "pruned_multispeaker/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_de_f.wav"
+  },
+  "leonie_mini": {
+    "model_id": "Multilingual_mini",
+    "config": "prodttsmodels/pruned/config_pruned.yml",
+    "model": "pruned_multispeaker/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_de_f2.wav"
+  },
+  "melina_mini": {
+    "model_id": "Multilingual_mini",
+    "config": "prodttsmodels/pruned/config_pruned.yml",
+    "model": "pruned_multispeaker/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_el_f.wav"
+  },
+  "marios_mini": {
+    "model_id": "Multilingual_mini",
+    "config": "prodttsmodels/pruned/config_pruned.yml",
+    "model": "pruned_multispeaker/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_el_m.wav"
+  },
+  "jack_mini": {
+    "model_id": "Multilingual_mini",
+    "config": "prodttsmodels/pruned/config_pruned.yml",
+    "model": "pruned_multispeaker/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_en_m.wav"
+  },
+  "camila_mini": {
+    "model_id": "Multilingual_mini",
+    "config": "prodttsmodels/pruned/config_pruned.yml",
+    "model": "pruned_multispeaker/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_es_f.wav"
+  },
+  "marco_mini": {
+    "model_id": "Multilingual_mini",
+    "config": "prodttsmodels/pruned/config_pruned.yml",
+    "model": "pruned_multispeaker/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_es_m.wav"
+  },
+  "joonas_mini": {
+    "model_id": "Multilingual_mini",
+    "config": "prodttsmodels/pruned/config_pruned.yml",
+    "model": "pruned_multispeaker/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_fi_m.wav"
+  },
+  "evan_mini": {
+    "model_id": "Multilingual_mini",
+    "config": "prodttsmodels/pruned/config_pruned.yml",
+    "model": "pruned_multispeaker/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_fr_m.wav"
+  },
+  "emma_mini": {
+    "model_id": "Multilingual_mini",
+    "config": "prodttsmodels/pruned/config_pruned.yml",
+    "model": "pruned_multispeaker/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_fr_f.wav"
+  },
+  "sofia_mini": {
+    "model_id": "Multilingual_mini",
+    "config": "prodttsmodels/pruned/config_pruned.yml",
+    "model": "pruned_multispeaker/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_it_f.wav"
+  },
+  "leonardo_mini": {
+    "model_id": "Multilingual_mini",
+    "config": "prodttsmodels/pruned/config_pruned.yml",
+    "model": "pruned_multispeaker/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_it_m.wav"
+  },
+  "bruno_mini": {
+    "model_id": "Multilingual_mini",
+    "config": "prodttsmodels/pruned/config_pruned.yml",
+    "model": "pruned_multispeaker/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_pt_m.wav"
+  },
+  "maria_mini": {
+    "model_id": "Multilingual_mini",
+    "config": "prodttsmodels/pruned/config_pruned.yml",
+    "model": "pruned_multispeaker/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_pt_f.wav"
+  },
+  "elena_mini": {
+    "model_id": "Multilingual_mini",
+    "config": "prodttsmodels/pruned/config_pruned.yml",
+    "model": "pruned_multispeaker/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_ru_f.wav"
+  },
+  "maxim_mini": {
+    "model_id": "Multilingual_mini",
+    "config": "prodttsmodels/pruned/config_pruned.yml",
+    "model": "pruned_multispeaker/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_ru_m.wav"
+  },
+  "stella_mini": {
+    "model_id": "Multilingual_mini",
+    "config": "prodttsmodels/pruned/config_pruned.yml",
+    "model": "pruned_multispeaker/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_sw_f.wav"
+  },
+  "liam_mini": {
+    "model_id": "Multilingual_mini",
+    "config": "prodttsmodels/pruned/config_pruned.yml",
+    "model": "pruned_multispeaker/model.pth",
+    "reference": "prodttsmodels/multilingual/ref_sw_m.wav"
+  },
+  "eleni": {
+    "model_id": "maria",
+    "config": "prodttsmodels/maria/config_ft.yml",
+    "model": "prodttsmodels/maria/model.pth",
+    "reference": "prodttsmodels/maria/reference.wav"
+  },
+  "irida": {
+    "model_id": "greek11",
+    "config": "prodttsmodels/greek11/config_ft.yml",
+    "model": "prodttsmodels/greek11/model.pth",
+    "reference": "prodttsmodels/greek11/reference.wav"
+  },
+  "anil": {
+    "model_id": "multi_indic",
+    "config": "prodttsmodels/tania-v2/config_ft.yml",
+    "model": "multilingual/model.pth",
+    "reference": "multilingual/train_telugumale_03333.wav"
+  },
+  "arul": {
+    "model_id": "multi_indic",
+    "config": "prodttsmodels/tania-v2/config_ft.yml",
+    "model": "multilingual/model.pth",
+    "reference": "multilingual/train_tamilmale_02232.wav"
+  },
+  "ved": {
+    "model_id": "multi_indic",
+    "config": "prodttsmodels/tania-v2/config_ft.yml",
+    "model": "multilingual/model.pth",
+    "reference": "multilingual/train_kannadafullmale_02427.wav"
+  },
+  "amit": {
+    "model_id": "multi_indic",
+    "config": "prodttsmodels/tania-v2/config_ft.yml",
+    "model": "multilingual/model.pth",
+    "reference": "multilingual/train_gujaratimale_03401.wav"
+  },
+  "chitra": {
+    "model_id": "multi_indic",
+    "config": "prodttsmodels/tania-v2/config_ft.yml",
+    "model": "multilingual/model.pth",
+    "reference": "multilingual/train_englishfemale.wav"
+  },
+  "mira": {
+    "model_id": "multi_indic",
+    "config": "prodttsmodels/tania-v2/config_ft.yml",
+    "model": "multilingual/model.pth",
+    "reference": "multilingual/train_bengalifemale_03333.wav"
+  },
+  "siddh": {
+    "model_id": "multi_indic",
+    "config": "prodttsmodels/tania-v2/config_ft.yml",
+    "model": "multilingual/model.pth",
+    "reference": "multilingual/text_marathi.wav"
+  },
+  "amar": {
+    "model_id": "multi_indic",
+    "config": "prodttsmodels/tania-v2/config_ft.yml",
+    "model": "multilingual/model.pth",
+    "reference": "multilingual/test_Punjabi_newtext_4372.wav"
+  },
+  "ishan": {
+    "model_id": "multi_indic",
+    "config": "prodttsmodels/tania-v2/config_ft.yml",
+    "model": "multilingual/model.pth",
+    "reference": "multilingual/train_hindifullmale_03471.wav"
+  },
+  "rohan": {
+    "model_id": "multi_indic_3",
+    "config": "prodttsmodels/tania-v2/config_ft.yml",
+    "model": "new_hte/model.pth",
+    "reference": "new_hte/2520bd27-e934-45df-9882-e10c0f631d6a__hi.wav"
+  },
+  "athena": {
+    "model_id": "multigreek",
+    "config": "prodttsmodels/multigreek/config_ft.yml",
+    "model": "prodttsmodels/multigreek/model.pth",
+    "reference": "prodttsmodels/multigreek/reference_nota.wav"
+  },
+  "chloe": {
+    "model_id": "greek_1_5",
+    "config": "prodttsmodels/greek_1_5/config_ft.yml",
+    "model": "prodttsmodels/greek_1_5/model.pth",
+    "reference": "prodttsmodels/greek_1_5/reference_1.wav"
+  },
+  "dora": {
+    "model_id": "greek_1_5",
+    "config": "prodttsmodels/greek_1_5/config_ft.yml",
+    "model": "prodttsmodels/greek_1_5/model.pth",
+    "reference": "prodttsmodels/greek_1_5/reference_5.wav"
+  },
+  "amala": {
+    "model_id": "indic10",
+    "config": "prodttsmodels/indic10/config_ft.yml",
+    "model": "prodttsmodels/indic10/model.pth",
+    "reference": "prodttsmodels/indic10/reference_malayalam.wav"
+  },
+  "lucia": {
+    "model_id": "spanish11",
+    "config": "prodttsmodels/spanish11/config_ft.yml",
+    "model": "prodttsmodels/spanish11/model.pth",
+    "reference": "prodttsmodels/spanish11/reference.wav"
+  },
+  "regina": {
+    "model_id": "reginaNQv2",
+    "config": "models/reginaNQv2/config_ft.yml",
+    "model": "models/reginaNQv2/epoch_2nd_00124.pth",
+    "reference": "models/reginaNQv2/reference3.wav"
+  },
+  "isha": {
+    "model_id": "riya11",
+    "config": "prodttsmodels/riya11/config_ft.yml",
+    "model": "prodttsmodels/riya11/model.pth",
+    "reference": "prodttsmodels/riya11/reference.wav"
+  },
+  "zoe": {
+    "model_id": "notanew",
+    "config": "prodttsmodels/notanew/config_ft.yml",
+    "model": "prodttsmodels/notanew/model.pth",
+    "reference": "prodttsmodels/notanew/reference.wav"
+  },
+  "zoeq": {
+    "model_id": "notanewQ",
+    "config": "prodttsmodels/notanewQ/config_ft.yml",
+    "model": "prodttsmodels/notanewQ/model.pth",
+    "reference": "prodttsmodels/notanewQ/reference_q.wav"
+  },
+  "zoe_v2": {
+    "model_id": "notanewExp",
+    "config": "prodttsmodels/notanewExp/config_ft.yml",
+    "model": "prodttsmodels/notanewExp/model.pth",
+    "reference": "prodttsmodels/notanewExp/reference_q.wav"
+  },
+  "nandini": {
+    "model_id": "indic10",
+    "config": "prodttsmodels/indic10/config_ft.yml",
+    "model": "prodttsmodels/indic10/model.pth",
+    "reference": "prodttsmodels/indic10/reference_bengali.wav"
+  },
+  "zoe_v3": {
+    "model_id": "notanewExpv2",
+    "config": "prodttsmodels/notanewExpv2/config_ft.yml",
+    "model": "prodttsmodels/notanewExpv2/model.pth",
+    "reference": "prodttsmodels/notanewExpv2/reference_q.wav"
+  }
+}

@@ -1,0 +1,18 @@
+name: "text_encoder"
+backend: "onnxruntime"
+max_batch_size : 0
+
+input [
+  { name: "TOKENS",   data_type: TYPE_INT64, dims: [ -1, -1 ] },
+  { name: "INPUT_LENGTHS", data_type: TYPE_INT64, dims: [ -1 ] },
+  { name: "TEXT_MASK", data_type: TYPE_BOOL, dims: [ 1, -1] }
+]
+
+output [
+  { name: "T_EN",   data_type: TYPE_FP32, dims: [ -1, -1, -1 ] }
+]
+
+instance_group [ { kind: KIND_GPU, count: 1} ]
+
+
+parameters { key: "cudnn_conv_algo_search" value: { string_value: "1" } }

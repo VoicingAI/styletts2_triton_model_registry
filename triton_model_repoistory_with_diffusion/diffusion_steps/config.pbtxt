@@ -1,0 +1,14 @@
+name: "diffusion_steps"
+backend: "tensorrt"
+
+input [
+  { name: "BERT_DUR",   data_type: TYPE_FP32, dims: [ -1, -1, 768 ] },
+  { name: "REF_S", data_type: TYPE_FP32, dims: [ -1, 256 ] },
+  { name: "NUM_STEPS", data_type: TYPE_INT32, dims: [ 1 ], is_shape_tensor: true }
+]
+
+output [
+  { name: "S_PRED",   data_type: TYPE_FP32, dims: [ -1, -1 ] }
+]
+
+instance_group [ { kind: KIND_GPU, count: 1} ]

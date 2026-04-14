@@ -1,0 +1,17 @@
+name: "bert_encoder"
+backend: "onnxruntime"
+max_batch_size : 0
+
+input [
+  { name: "BERT_DUR",   data_type: TYPE_FP32, dims: [ -1, -1, 768 ] }
+]
+
+output [
+  { name: "D_EN",   data_type: TYPE_FP16, dims: [ -1, 512, -1 ] }
+]
+
+instance_group [ { kind: KIND_GPU, count: 1} ]
+
+
+
+parameters { key: "cudnn_conv_algo_search" value: { string_value: "1" } }

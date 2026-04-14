@@ -1,0 +1,16 @@
+name: "prosody_lstm"
+backend: "tensorrt"
+max_batch_size : 0
+
+input [
+    { name: "D_OUT",   data_type: TYPE_FP32, dims: [ -1, -1, 640 ] }
+]
+
+output [
+  { name: "X_OUT",   data_type: TYPE_FP16, dims: [ -1, -1, 512 ] }
+]
+
+instance_group [ { kind: KIND_GPU, count: 1} ]
+
+
+parameters { key: "cudnn_conv_algo_search" value: { string_value: "1" } }

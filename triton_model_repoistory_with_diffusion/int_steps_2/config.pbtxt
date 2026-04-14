@@ -1,0 +1,20 @@
+name: "int_steps_2"
+backend: "onnxruntime"
+max_batch_size : 0
+
+input [
+    { name: "DURATION",   data_type: TYPE_FP16, dims: [ -1, -1, 50 ] },
+    { name: "D_OUT",   data_type: TYPE_FP32, dims: [ -1, -1, 640 ] },
+    { name: "T_EN",   data_type: TYPE_FP32, dims: [ -1, 512, -1 ] },
+    { name: "SPEED_OUT",   data_type: TYPE_FP32, dims: [ 1, 1 ] }
+]
+
+output [
+    { name: "EN",   data_type: TYPE_FP32, dims: [ -1, 640, -1 ] },
+    { name: "ASR",   data_type: TYPE_FP32, dims: [ -1, 512, -1 ] }
+]
+
+instance_group [ { kind: KIND_GPU, count: 1} ]
+
+parameters { key: "cudnn_conv_algo_search" value: { string_value: "1" } }
+

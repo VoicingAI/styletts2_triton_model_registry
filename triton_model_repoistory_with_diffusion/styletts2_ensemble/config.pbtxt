@@ -1,0 +1,164 @@
+name: "styletts2_ensemble"
+platform: "ensemble"
+max_batch_size : 0
+
+input [
+  { name: "TEXT",     data_type: TYPE_STRING, dims: [ 1,1 ] },
+  { name: "SPEAKER",  data_type: TYPE_STRING, dims: [ 1,1 ] },
+  { name: "LANGUAGE", data_type: TYPE_STRING, dims: [ 1,1 ] },
+  { name: "SPEED",    data_type: TYPE_FP32,   dims: [ 1, 1 ] }, 
+  { name: "EMBEDDING_SCALE", data_type: TYPE_FP32,   dims: [ 1, 1 ] },
+  { name: "NUM_STEPS", data_type: TYPE_INT32, dims: [ 1 ] }
+]
+
+output [
+  { name: "AUDIO",      data_type: TYPE_FP32, dims: [ -1 ] }
+]
+
+ensemble_scheduling {
+  step [
+    {
+      model_name: "frontend"
+      model_version: 1
+      input_map { key: "TEXT", value: "TEXT" },
+      input_map { key: "SPEAKER", value: "SPEAKER" },
+      input_map { key: "LANGUAGE", value: "LANGUAGE" },
+      input_map { key: "SPEED", value: "SPEED" },
+      input_map { key: "EMBEDDING_SCALE", value: "EMBEDDING_SCALE" }
+
+      output_map  { key: "ALPHA", value: "alpha" },
+      output_map  { key: "BETA", value: "BETA" },
+      output_map  { key: "TOKENS", value: "token_ids" },
+      output_map  { key: "INPUT_LENGTHS", value: "input_lengths" },
+      output_map  { key: "TEXT_MASK", value: "text_mask"  },
+      output_map  { key: "ATTENTION_MASK",value: "attention_mask"},
+      output_map  { key: "REF_S", value: "ref_s"},
+      output_map  { key: "SPEED_OUT", value: "SPEED_OUT" }
+    },
+    {
+      model_name: "text_encoder"
+      model_version: 1
+      input_map { key: "TOKENS", value: "token_ids" },
+      input_map { key: "INPUT_LENGTHS", value: "input_lengths" },
+      input_map { key: "TEXT_MASK", value: "text_mask"  }
+
+      output_map  { key: "T_EN", value: "t_en" }
+    },
+    {
+      model_name: "bert"
+      model_version: 1
+      input_map { key: "TOKENS", value: "token_ids" },
+      input_map { key: "ATTENTION_MASK", value: "attention_mask" }
+
+      output_map  { key: "BERT_DUR", value: "bert_dur" }
+    },
+    {
+      model_name: "bert_encoder"
+      model_version: 1
+      input_map { key: "BERT_DUR", value: "bert_dur" }
+
+      output_map  { key: "D_EN", value: "d_en" }
+    },
+    {
+      model_name: "diffusion_steps"
+      model_version: 1
+      input_map { key: "BERT_DUR", value: "bert_dur" },
+      input_map { key: "REF_S", value: "ref_s" },
+      input_map { key: "NUM_STEPS", value: "NUM_STEPS" }
+
+      output_map  { key: "S_PRED", value: "s_pred" }
+    },
+    {
+      model_name: "int_steps_1"
+      model_version: 1
+      input_map  { key: "ALPHA", value: "alpha" },
+      input_map  { key: "BETA", value: "BETA" },
+      input_map { key: "S_PRED", value: "s_pred" },
+      input_map { key: "REF_S", value: "ref_s" },
+      input_map { key: "T_EN", value: "t_en" }
+
+      output_map  { key: "REF", value: "ref" },
+      output_map  { key: "S_OUT", value: "s_out" },
+      output_map  { key: "TEXT_MASK_PRED", value: "text_mask_pred" }
+    },
+    {
+      model_name: "prosody_text_encoder"
+      model_version: 1
+      input_map  { key: "D_EN", value: "d_en" },
+      input_map  { key: "S_OUT", value: "s_out" },
+      input_map  { key: "TEXT_MASK_PRED", value: "text_mask_pred" }
+
+      output_map  { key: "D_OUT", value: "d_out" }
+    },
+    {
+      model_name: "prosody_lstm"
+      model_version: 1
+      input_map  { key: "D_OUT", value: "d_out" }
+
+      output_map  { key: "X_OUT", value: "x_out" }
+    },
+    {
+      model_name: "prosody_dur_proj"
+      model_version: 1
+      input_map  { key: "X_OUT", value: "x_out" }
+
+      output_map  { key: "DURATION", value: "duration" }
+    },
+    {
+      model_name: "int_steps_2"
+      model_version: 1
+      input_map  { key: "DURATION", value: "duration" },
+      input_map  { key: "D_OUT", value: "d_out" },
+      input_map  { key: "T_EN", value: "t_en" },
+      input_map  { key: "SPEED_OUT", value: "SPEED_OUT" }
+
+      output_map  { key: "EN", value: "en" },
+      output_map  { key: "ASR", value: "asr" }
+    },
+    {
+      model_name: "prosody_predictor_ftrain"
+      model_version: 1
+      input_map  { key: "EN", value: "en" },
+      input_map  { key: "S_OUT", value: "s_out" }
+
+      output_map  { key: "F0_PRED", value: "f0_pred" },
+      output_map  { key: "N_PRED", value: "n_pred" }
+    },
+    {
+      model_name: "prep_decoder"
+      model_version: 1
+      input_map  { key: "F0_PRED", value: "f0_pred" },
+      input_map  { key: "N_PRED", value: "n_pred" }
+
+      output_map  { key: "F0_OUT", value: "f0_out" },
+      output_map  { key: "N_OUT", value: "n_out" }
+    },
+    {
+      model_name: "decoder"
+      model_version: 1
+      input_map  { key: "ASR", value: "asr" },
+      input_map  { key: "F0_OUT", value: "f0_out" },
+      input_map  { key: "N_OUT", value: "n_out" },
+      input_map  { key: "REF", value: "ref" }
+
+      output_map  { key: "X_OUT", value: "x_out2" }
+    },
+    {
+      model_name: "generator"
+      model_version: 1
+      input_map  { key: "X_OUT", value: "x_out2" },
+      input_map  { key: "F0_PRED", value: "f0_pred" },
+      input_map  { key: "REF", value: "ref" }
+
+      output_map  { key: "AUDIO_OUT", value: "AUDIO_OUT" }
+    },
+    {
+      model_name: "last_step"
+      model_version: 1
+      input_map  { key: "AUDIO_OUT", value: "AUDIO_OUT" }
+      
+
+      output_map { key: "AUDIO", value: "AUDIO" }
+    }
+  ]
+}

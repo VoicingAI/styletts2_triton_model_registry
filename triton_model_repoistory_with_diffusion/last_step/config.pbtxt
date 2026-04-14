@@ -1,0 +1,13 @@
+name: "last_step"
+backend: "python"
+max_batch_size: 0
+
+input [
+  { name: "AUDIO_OUT",   data_type: TYPE_FP32, dims: [ -1, 1, -1 ] }
+]
+
+output [
+  { name: "AUDIO", data_type: TYPE_FP32, dims: [ -1 ] }
+]
+
+instance_group [ { kind: KIND_GPU, count: 1} ]

@@ -1,0 +1,181 @@
+{
+  "de": {
+    "armin": "Multilingual",
+    "amelie": "Multilingual",
+    "leonie": "Multilingual",
+    "armin_mini": "Multilingual_mini",
+    "amelie_mini": "Multilingual_mini",
+    "leonie_mini": "Multilingual_mini",
+    "andrea": "germannew"
+  },
+  "el": {
+    "melina": "Multilingual",
+    "marios": "Multilingual",
+    "melina_mini": "Multilingual_mini",
+    "marios_mini": "Multilingual_mini",
+    "eleni": "maria",
+    "irida": "greek11",
+    "athena": "multigreek",
+    "chloe": "greek_1_5",
+    "dora": "greek_1_5",
+    "zoe": "notanew",
+    "zoeq": "notanewQ",
+    "zoe_v2": "notanewExp",
+    "zoe_v3": "notanewExpv2"
+  },
+  "en": {
+    "tara": "Neeti",
+    "tara_en": "Neeti_Eng",
+    "peter": "Andrew-V1",
+    "amber": "Clarissa-V1",
+    "arya": "Kat-V2",
+    "jimmy": "MathewN",
+    "vikram": "SachinEnglish",
+    "arjun": "SachinHindi",
+    "priya": "Vaishali",
+    "riley": "Alex",
+    "isabela": "SpanishV2",
+    "manuela": "SpanishV2",
+    "armin": "Multilingual",
+    "amelie": "Multilingual",
+    "melina": "Multilingual",
+    "marios": "Multilingual",
+    "jack": "Multilingual",
+    "camila": "Multilingual",
+    "marco": "Multilingual",
+    "joonas": "Multilingual",
+    "evan": "Multilingual",
+    "sofia": "Multilingual",
+    "leonardo": "Multilingual",
+    "bruno": "Multilingual",
+    "maria": "Multilingual",
+    "elena": "Multilingual",
+    "maxim": "Multilingual",
+    "stella": "Multilingual",
+    "liam": "Multilingual",
+    "armin_mini": "Multilingual_mini",
+    "amelie_mini": "Multilingual_mini",
+    "melina_mini": "Multilingual_mini",
+    "marios_mini": "Multilingual_mini",
+    "jack_mini": "Multilingual_mini",
+    "camila_mini": "Multilingual_mini",
+    "marco_mini": "Multilingual_mini",
+    "joonas_mini": "Multilingual_mini",
+    "evan_mini": "Multilingual_mini",
+    "sofia_mini": "Multilingual_mini",
+    "leonardo_mini": "Multilingual_mini",
+    "bruno_mini": "Multilingual_mini",
+    "maria_mini": "Multilingual_mini",
+    "elena_mini": "Multilingual_mini",
+    "maxim_mini": "Multilingual_mini",
+    "stella_mini": "Multilingual_mini",
+    "liam_mini": "Multilingual_mini",
+    "evelyn": "female11",
+    "ross": "NewData12",
+    "abby": "AmericanF-V1",
+    "nisha": "mary-v1",
+    "pruned_test": "pruned_test",
+    "chitra": "multi_indic",
+    "rohan": "multi_indic_3",
+    "nisha_multi_v2": "marymultiv2",
+    "isha": "riya11",
+    "nandini": "indic10",
+    "emma": "Multilingual"
+  },
+  "es": {
+    "isabela": "SpanishV2",
+    "manuela": "SpanishV2",
+    "camila": "Multilingual",
+    "marco": "Multilingual",
+    "camila_mini": "Multilingual_mini",
+    "marco_mini": "Multilingual_mini",
+    "sam": "MexicanSpanish",
+    "lucia": "spanish11",
+    "regina": "reginaNQv2"
+  },
+  "fi": {
+    "joonas": "Multilingual",
+    "joonas_mini": "Multilingual_mini"
+  },
+  "fr": {
+    "evan": "Multilingual",
+    "emma": "Multilingual",
+    "aurelie": "frenchnew",
+    "evan_mini": "Multilingual_mini",
+    "emma_mini": "Multilingual_mini"
+  },
+  "hi": {
+    "tara_hi": "Neeti_Hi",
+    "arjun": "SachinHindi",
+    "nisha_hi": "mary-hindi-v3",
+    "nisha_hi_v2": "mary-hindi-v3",
+    "ishan": "multi_indic",
+    "rohan": "multi_indic_3",
+    "chitra": "multi_indic",
+    "nisha_multi_v2": "marymultiv2",
+    "nandini": "indic10"
+  },
+  "it": {
+    "sofia": "Multilingual",
+    "leonardo": "Multilingual",
+    "sofia_mini": "Multilingual_mini",
+    "leonardo_mini": "Multilingual_mini"
+  },
+  "pt": {
+    "bruno": "Multilingual",
+    "maria": "Multilingual",
+    "bruno_mini": "Multilingual_mini",
+    "maria_mini": "Multilingual_mini"
+  },
+  "ru": {
+    "elena": "Multilingual",
+    "maxim": "Multilingual",
+    "elena_mini": "Multilingual_mini",
+    "maxim_mini": "Multilingual_mini"
+  },
+  "sv": {
+    "stella": "Multilingual",
+    "liam": "Multilingual",
+    "stella_mini": "Multilingual_mini",
+    "liam_mini": "Multilingual_mini"
+  },
+  "en-uk": {
+    "alice": "tania-v2"
+  },
+  "te": {
+    "anil": "multi_indic",
+    "chitra": "multi_indic",
+    "rohan": "multi_indic_3"
+  },
+  "ta": {
+    "arul": "multi_indic",
+    "rohan": "multi_indic_3",
+    "chitra": "multi_indic"
+  },
+  "bn": {
+    "mira": "multi_indic",
+    "chitra": "multi_indic",
+    "nandini": "indic10"
+  },
+  "mr": {
+    "siddh": "multi_indic",
+    "chitra": "multi_indic",
+    "rohan": "multi_indic_3"
+  },
+  "kn": {
+    "ved": "multi_indic",
+    "chitra": "multi_indic",
+    "rohan": "multi_indic_3"
+  },
+  "pa": {
+    "amar": "multi_indic",
+    "chitra": "multi_indic"
+  },
+  "gu": {
+    "amit": "multi_indic",
+    "chitra": "multi_indic"
+  },
+  "ml": {
+    "amala": "indic10"
+  }
+}
