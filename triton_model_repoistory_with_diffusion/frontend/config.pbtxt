@@ -5,8 +5,7 @@ input [
   { name: "TEXT",     data_type: TYPE_STRING, dims: [ 1, 1 ] },
   { name: "SPEAKER",  data_type: TYPE_STRING, dims: [ 1, 1 ] },
   { name: "LANGUAGE", data_type: TYPE_STRING, dims: [ 1, 1 ] },
-  { name: "SPEED", data_type: TYPE_FP32, dims: [ 1, 1 ] },
-  { name: "EMBEDDING_SCALE", data_type: TYPE_FP32, dims: [ 1, 1 ] }
+  { name: "SPEED", data_type: TYPE_FP32, dims: [ 1, 1 ] }
 ]
 
 output [
@@ -24,4 +23,7 @@ instance_group [ { kind: KIND_GPU, count: 1} ]
 
 
 
-parameters: { key: "MODELS_BASE_PATH", value: { string_value: "/models" } }
+# Directory holding <speaker>.pt style vectors, as written by convert.py into
+# triton_repos/<model_id>/reference_styles/. Mount it here.
+parameters: { key: "REFERENCE_STYLES_DIR", value: { string_value: "/workspace/reference_styles" } }
+parameters: { key: "DEFAULT_LANGUAGE", value: { string_value: "en" } }

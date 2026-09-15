@@ -1,0 +1,808 @@
+<title>StyleTTS2 Inference Optimization</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+  :root{
+    --ground:#F5F7F7;
+    --surface:#FFFFFF;
+    --surface-sunk:#EDF1F1;
+    --ink:#141A1C;
+    --ink-soft:#3C4A4D;
+    --muted:#5F7074;
+    --rule:#D8E2E2;
+    --rule-strong:#B9C9C9;
+    --accent:#0B6E75;
+    --accent-soft:#E2F0F0;
+    --signal:#9A5209;
+    --signal-soft:#F7EDDF;
+    --dead:#94272B;
+    --dead-soft:#F8E8E7;
+    --good:#2C6640;
+
+    --display:'Archivo',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --body:'Source Serif 4',Georgia,'Times New Roman',serif;
+    --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+
+    --measure:68ch;
+    --wide:1120px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#0E1416;
+      --surface:#151D20;
+      --surface-sunk:#111819;
+      --ink:#E3EBEB;
+      --ink-soft:#BCCACB;
+      --muted:#8CA0A3;
+      --rule:#243033;
+      --rule-strong:#33454A;
+      --accent:#4FC3CC;
+      --accent-soft:#132B2E;
+      --signal:#E0A050;
+      --signal-soft:#2A2114;
+      --dead:#E28B87;
+      --dead-soft:#2C1917;
+      --good:#7CC48F;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0E1416;
+    --surface:#151D20;
+    --surface-sunk:#111819;
+    --ink:#E3EBEB;
+    --ink-soft:#BCCACB;
+    --muted:#8CA0A3;
+    --rule:#243033;
+    --rule-strong:#33454A;
+    --accent:#4FC3CC;
+    --accent-soft:#132B2E;
+    --signal:#E0A050;
+    --signal-soft:#2A2114;
+    --dead:#E28B87;
+    --dead-soft:#2C1917;
+    --good:#7CC48F;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--ground);
+    color:var(--ink);
+    font-family:var(--body);
+    font-size:17px;
+    line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{
+    max-width:var(--wide);
+    margin:0 auto;
+    padding-inline:24px;
+    padding-block:0 96px;
+  }
+  .col{max-width:var(--measure)}
+
+  /* ---------- masthead ---------- */
+  header.masthead{
+    padding-block:64px 40px;
+    border-bottom:2px solid var(--ink);
+    margin-bottom:56px;
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    font-weight:500;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin:0 0 20px;
+  }
+  h1{
+    font-family:var(--display);
+    font-weight:700;
+    font-size:clamp(2.3rem,6vw,3.6rem);
+    line-height:1.02;
+    letter-spacing:-.025em;
+    margin:0 0 20px;
+    text-wrap:balance;
+  }
+  .standfirst{
+    font-size:1.16rem;
+    color:var(--ink-soft);
+    margin:0;
+    max-width:60ch;
+  }
+  .statline{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px 40px;
+    margin-top:36px;
+    padding-top:24px;
+    border-top:1px solid var(--rule);
+  }
+  .stat{display:flex;flex-direction:column;gap:2px}
+  .stat b{
+    font-family:var(--mono);
+    font-size:1.22rem;
+    font-weight:700;
+    letter-spacing:-.02em;
+    font-variant-numeric:tabular-nums;
+  }
+  .stat span{
+    font-family:var(--mono);
+    font-size:10.5px;
+    letter-spacing:.13em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+
+  /* ---------- sections ---------- */
+  section{margin-bottom:72px}
+  h2{
+    font-family:var(--display);
+    font-weight:600;
+    font-size:clamp(1.5rem,3.4vw,2rem);
+    line-height:1.14;
+    letter-spacing:-.02em;
+    margin:0 0 8px;
+    text-wrap:balance;
+  }
+  h3{
+    font-family:var(--display);
+    font-weight:600;
+    font-size:1.14rem;
+    letter-spacing:-.01em;
+    margin:36px 0 10px;
+  }
+  .sec-head{
+    border-top:1px solid var(--rule-strong);
+    padding-top:18px;
+    margin-bottom:26px;
+  }
+  .sec-head .eyebrow{margin-bottom:12px}
+  .deck{color:var(--muted);font-size:1.02rem;margin:0;max-width:58ch}
+  p{margin:0 0 18px}
+  a{color:var(--accent)}
+
+  code{
+    font-family:var(--mono);
+    font-size:.855em;
+    background:var(--surface-sunk);
+    border:1px solid var(--rule);
+    border-radius:3px;
+    padding:1px 5px;
+    word-break:break-word;
+  }
+  strong{font-weight:600}
+  em{font-style:italic}
+
+  ul,ol{margin:0 0 18px;padding-left:22px}
+  li{margin-bottom:9px}
+  li::marker{color:var(--muted)}
+
+  /* ---------- stage rail ---------- */
+  .stages{display:flex;flex-direction:column;gap:0}
+  .stage{
+    display:grid;
+    grid-template-columns:148px 1fr;
+    gap:28px;
+    padding-block:26px;
+    border-top:1px solid var(--rule);
+  }
+  .stage:last-child{border-bottom:1px solid var(--rule)}
+  .stage-meta{display:flex;flex-direction:column;gap:4px}
+  .stage-n{
+    font-family:var(--mono);
+    font-size:2rem;
+    font-weight:700;
+    line-height:1;
+    color:var(--accent);
+    font-variant-numeric:tabular-nums;
+  }
+  .stage-date{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  .stage-body h3{margin-top:0;margin-bottom:8px;font-size:1.18rem}
+  .stage-body p{margin-bottom:12px}
+  .stage-body p:last-child{margin-bottom:0}
+  .ledger{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px 26px;
+    margin-top:14px;
+    font-family:var(--mono);
+    font-size:12.5px;
+    line-height:1.5;
+  }
+  .ledger div{display:flex;gap:8px;align-items:baseline}
+  .ledger .k{
+    color:var(--muted);
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    font-size:10.5px;
+    flex:none;
+  }
+
+  /* ---------- pipeline ---------- */
+  .scroller{overflow-x:auto;padding-bottom:6px}
+  .flow{min-width:660px;display:flex;flex-direction:column;gap:0}
+  .frow{
+    display:grid;
+    grid-template-columns:132px 1fr;
+    gap:20px;
+    align-items:start;
+    padding-block:13px;
+    border-top:1px solid var(--rule);
+  }
+  .flow .frow:last-child{border-bottom:1px solid var(--rule)}
+  .fstage{
+    font-family:var(--mono);
+    font-size:10.5px;
+    letter-spacing:.11em;
+    text-transform:uppercase;
+    color:var(--muted);
+    padding-top:6px;
+  }
+  .fnodes{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .node{
+    font-family:var(--mono);
+    font-size:12.5px;
+    font-weight:500;
+    padding:5px 10px;
+    border-radius:2px;
+    border:1px solid var(--rule-strong);
+    background:var(--surface);
+    white-space:nowrap;
+  }
+  .node.trt{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+  .node.py{border-style:dashed;color:var(--signal);border-color:var(--signal);background:var(--signal-soft)}
+  .tensor{
+    font-family:var(--mono);
+    font-size:11.5px;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+  .arrow{color:var(--rule-strong);font-family:var(--mono);font-size:13px}
+  .legend{
+    display:flex;flex-wrap:wrap;gap:8px 20px;
+    margin-top:18px;
+    font-family:var(--mono);font-size:11.5px;color:var(--muted);
+  }
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .swatch{width:22px;height:11px;border-radius:2px;border:1px solid var(--rule-strong);flex:none}
+  .swatch.trt{border-color:var(--accent);background:var(--accent-soft)}
+  .swatch.py{border-color:var(--signal);border-style:dashed;background:var(--signal-soft)}
+
+  /* ---------- tables ---------- */
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-family:var(--mono);
+    font-size:12.5px;
+    line-height:1.45;
+  }
+  thead th{
+    text-align:left;
+    font-weight:700;
+    font-size:10.5px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--muted);
+    padding:0 14px 9px 0;
+    border-bottom:1.5px solid var(--rule-strong);
+    white-space:nowrap;
+  }
+  tbody td{
+    padding:9px 14px 9px 0;
+    border-bottom:1px solid var(--rule);
+    vertical-align:top;
+  }
+  tbody tr:last-child td{border-bottom:none}
+  td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tnote{font-family:var(--body);font-size:.95rem;color:var(--muted);margin-top:12px}
+  .pill{
+    display:inline-block;
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    padding:2px 7px;
+    border-radius:2px;
+    white-space:nowrap;
+  }
+  .pill.trt{background:var(--accent-soft);color:var(--accent)}
+  .pill.ort{background:var(--surface-sunk);color:var(--ink-soft)}
+  .pill.py{background:var(--signal-soft);color:var(--signal)}
+
+  /* ---------- callouts ---------- */
+  .gap{
+    border-left:3px solid var(--dead);
+    background:var(--dead-soft);
+    padding:18px 22px;
+    margin:0 0 16px;
+    border-radius:0 3px 3px 0;
+  }
+  .gap h4{
+    font-family:var(--display);
+    font-size:1rem;
+    font-weight:600;
+    margin:0 0 6px;
+    color:var(--ink);
+  }
+  .gap p{margin:0;font-size:.97rem;color:var(--ink-soft)}
+  .gap p + p{margin-top:10px}
+  .gap .tag{
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--dead);
+    display:block;
+    margin-bottom:7px;
+  }
+  .note{
+    border-left:3px solid var(--accent);
+    background:var(--accent-soft);
+    padding:18px 22px;
+    margin:24px 0;
+    border-radius:0 3px 3px 0;
+  }
+  .note p{margin:0;font-size:.99rem}
+  .note p + p{margin-top:10px}
+
+  .pre{
+    font-family:var(--mono);
+    font-size:12.5px;
+    line-height:1.6;
+    background:var(--surface-sunk);
+    border:1px solid var(--rule);
+    border-radius:3px;
+    padding:16px 18px;
+    overflow-x:auto;
+    margin:0 0 20px;
+    white-space:pre;
+  }
+  .pre .c{color:var(--muted)}
+  .pre .hl{color:var(--accent);font-weight:500}
+
+  footer{
+    border-top:2px solid var(--ink);
+    padding-top:24px;
+    margin-top:16px;
+    font-family:var(--mono);
+    font-size:11.5px;
+    color:var(--muted);
+    line-height:1.7;
+  }
+
+  @media (max-width:720px){
+    body{font-size:16px}
+    .stage{grid-template-columns:1fr;gap:10px}
+    .stage-meta{flex-direction:row;align-items:baseline;gap:12px}
+    .stage-n{font-size:1.4rem}
+    header.masthead{padding-block:44px 32px}
+    .statline{gap:14px 28px}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="page">
+
+<header class="masthead">
+  <p class="eyebrow">Voicing AI · Inference Engineering</p>
+  <h1>StyleTTS2 Inference Optimization</h1>
+  <p class="standfirst">How a single PyTorch speech model became sixteen Triton models, eight TensorRT engines and a fixed shape budget — what each step bought, what it cost, and which knobs turned out to be connected to nothing.</p>
+  <div class="statline">
+    <div class="stat"><b>16</b><span>Triton models</span></div>
+    <div class="stat"><b>8</b><span>TensorRT engines</span></div>
+    <div class="stat"><b>15</b><span>Ensemble hops</span></div>
+    <div class="stat"><b>4 × L4</b><span>Serving fleet</span></div>
+    <div class="stat"><b>19.2 s</b><span>Max utterance</span></div>
+    <div class="stat"><b>16 mo</b><span>Feb 25 → Jun 26</span></div>
+  </div>
+</header>
+
+<section class="col">
+  <div class="sec-head">
+    <p class="eyebrow">The constraint</p>
+    <h2>Why StyleTTS2 resists being one graph</h2>
+  </div>
+
+  <p>Every graph compiler — ONNX Runtime, TensorRT, TorchInductor — makes the same bargain: give me a computation whose <em>structure</em> is fixed and whose <em>shapes</em> are derivable from input shapes, and I will fuse kernels, pick tuned implementations and eliminate the Python interpreter. StyleTTS2 cannot make good on either half of that bargain end to end.</p>
+
+  <p>The model is not a network so much as a small pipeline of eight sub-networks with two non-differentiable joints in the middle. The blocking joint is duration prediction. The prosody head emits a per-phoneme duration; those durations are summed into a cumulative index, and an alignment matrix of shape <code>[tokens, frames]</code> is scattered from it. The output length is a function of the input <em>values</em>, not the input <em>shapes</em>.</p>
+
+  <p>That distinction is the whole reason this system has the shape it has. A compiler can propagate <code>[1, 512, T] → [1, 512, 2T]</code>. It cannot propagate <code>[1, T, 50] → [1, 640, sum(round(σ(x).sum(-1)))]</code>, because the answer is not in the shape algebra. So the graph gets cut there, and the pieces on either side get compiled independently.</p>
+
+  <h3>Three seams, three different answers</h3>
+
+  <p>There are exactly three places where the computation stops being dense tensor arithmetic, and each got a different treatment:</p>
+
+  <ol>
+    <li><strong>Text → phoneme tokens.</strong> String normalisation, espeak-ng phonemization, dictionary lookup, per-speaker pronunciation overrides. Not tensor math at all. Runs as a Triton <em>Python backend</em> (<code>frontend</code>), which also loads the speaker's 256-d style vector from disk.</li>
+    <li><strong>Durations → alignment → frames.</strong> The value-dependent one. This <em>was</em> expressed in ONNX — <code>Range</code>, <code>CumSum</code>, a broadcast comparison and three <code>ScatterND</code>s build the alignment matrix on-GPU without a host round-trip. It stays on ONNX Runtime because TensorRT requires output shapes computable from input shapes, and this one is not.</li>
+    <li><strong>Audio → client bytes.</strong> Squeeze, trim, resample, encode. Python backend (<code>last_step</code>) plus the FastAPI gateway.</li>
+  </ol>
+
+  <div class="note">
+    <p><strong>The generalisable principle.</strong> Don't ask "can I export this model?" Ask "where does shape stop being a function of shape?" Those points are your graph boundaries, and they are decided by the model's semantics, not by the exporter's limitations. Everything between two boundaries is a compilation unit and should be as large as possible; everything at a boundary needs an interpreter.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head col">
+    <p class="eyebrow">The ladder</p>
+    <h2>Five steps, sixteen months</h2>
+    <p class="deck">Each stage kept the stage before it working. Numbered because the order was forced — you cannot profile a decomposition you have not built, and you cannot build engines for graphs you have not exported.</p>
+  </div>
+
+  <div class="stages">
+
+    <div class="stage">
+      <div class="stage-meta">
+        <span class="stage-n">01</span>
+        <span class="stage-date">Sep 2025</span>
+      </div>
+      <div class="stage-body">
+        <h3>In-process fp16 and admission control</h3>
+        <p>The model ran as PyTorch inside the FastAPI worker. The cheapest wins first: half precision on the weights, and a micro-batching queue in front of the endpoint that collects up to 8 requests within a time window before dispatching.</p>
+        <p>This is the stage everyone starts at, and it is worth naming what it actually does. Half precision on an L4 roughly halves weight-memory traffic and unlocks the tensor cores for the convolutional stack. The queue does not make any single request faster — it bounds how many requests can be in flight, which converts tail-latency blowup under load into a bounded wait.</p>
+        <div class="ledger">
+          <div><span class="k">Bought</span> memory bandwidth, load stability</div>
+          <div><span class="k">Cost</span> nothing structural</div>
+          <div><span class="k">Ceiling</span> Python still in the inner loop</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-meta">
+        <span class="stage-n">02</span>
+        <span class="stage-date">Oct 2025</span>
+      </div>
+      <div class="stage-body">
+        <h3>Decomposition into a Triton ensemble</h3>
+        <p>The structural step. The model was cut at the three seams above and exported as a set of ONNX graphs wired together by a Triton <code>ensemble_scheduling</code> block. The single training-time decoder was itself split three ways — <code>prep_decoder</code> for the strided F0/energy convolutions, <code>decoder</code> for the AdaIN residual stack, <code>generator</code> for the HiFi-GAN vocoder — so each could be scheduled and quantised independently.</p>
+        <p>Decomposition is not free. Fifteen ensemble steps means fifteen scheduler hops, fifteen tensor handoffs, and no fusion across a boundary. You pay that overhead to buy the right to compile each piece with the runtime that suits it. The bet only pays if the pieces are large enough that per-hop overhead is noise — which is why the split is at semantic joints, not arbitrary layer counts.</p>
+        <div class="ledger">
+          <div><span class="k">Bought</span> per-graph runtime choice</div>
+          <div><span class="k">Cost</span> 15 scheduler hops per request</div>
+          <div><span class="k">Unlocked</span> TensorRT, later</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-meta">
+        <span class="stage-n">03</span>
+        <span class="stage-date">Dec 2025</span>
+      </div>
+      <div class="stage-body">
+        <h3>Style diffusion moved onto Triton</h3>
+        <p>The style sampler is a loop: a Karras noise schedule, then <em>n</em> ancestral DPM-Solver steps, each calling a style transformer twice. Loops are a compiler's problem child. The choice made here was to <strong>unroll the loop at trace time</strong> — the Python <code>for</code> becomes <em>n</em> copies of the denoiser in the graph.</p>
+        <p>The upside is total: no control flow, full fusion across steps, and TensorRT sees one straight-line graph it can tune end to end. The downside is equally total: <strong>the step count is now part of the graph's structure.</strong> Changing it is a re-export, not a different input value. This is the single most consequential trade in the whole pipeline, and section six returns to what it broke.</p>
+        <div class="ledger">
+          <div><span class="k">Bought</span> full fusion, no control flow</div>
+          <div><span class="k">Cost</span> step count frozen into the engine</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-meta">
+        <span class="stage-n">04</span>
+        <span class="stage-date">Jan 2026</span>
+      </div>
+      <div class="stage-body">
+        <h3>TensorRT engines and shape profiles</h3>
+        <p>Eight of the twelve exported graphs were compiled to TensorRT engines with <code>trtexec --fp16</code> and explicit <code>min</code>/<code>opt</code>/<code>max</code> shape profiles. Warmup sentences landed in the same commit, and that is not a coincidence — the two are the same idea seen from opposite ends.</p>
+        <p>The four graphs left on ONNX Runtime were left there deliberately: one has value-dependent output shape, one is dominated by an LSTM that TensorRT handles poorly, and two are small enough that a compiled engine would buy less than the extra handoff costs.</p>
+        <div class="ledger">
+          <div><span class="k">Bought</span> kernel autotuning, layer fusion</div>
+          <div><span class="k">Cost</span> a hard shape ceiling, minutes of build</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-meta">
+        <span class="stage-n">05</span>
+        <span class="stage-date">Feb → Jun 2026</span>
+      </div>
+      <div class="stage-body">
+        <h3>Making it survive production</h3>
+        <p>Nothing in this stage makes a single inference faster. All of it makes the <em>system</em> faster or cheaper: a shared EFS volume so four replicas build engines once rather than four times, a pre-recorded audio cache that answers common utterances without touching the GPU, a warmup sidecar, Prometheus high-water-mark concurrency metrics, and load balancing by outstanding request count rather than round-robin.</p>
+        <p>That last one matters more than it looks. TTS request duration varies by an order of magnitude with text length. Round-robin across replicas assumes uniform cost and will pile short requests behind long ones; <code>least_outstanding_requests</code> does not.</p>
+        <div class="ledger">
+          <div><span class="k">Bought</span> cold-start amortisation, GPU-free cache hits</div>
+          <div><span class="k">Cost</span> a stateful shared volume</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <div class="sec-head col">
+    <p class="eyebrow">Topology</p>
+    <h2>The sixteen-model pipeline</h2>
+    <p class="deck">One request, fifteen scheduled steps. Teal is a TensorRT engine; dashed amber is a Python backend; plain is ONNX Runtime.</p>
+  </div>
+
+  <div class="scroller">
+    <div class="flow">
+      <div class="frow">
+        <div class="fstage">Text</div>
+        <div class="fnodes">
+          <span class="node py">frontend</span>
+          <span class="arrow">→</span>
+          <span class="tensor">TOKENS · TEXT_MASK · REF_S[1,256] · SPEED</span>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fstage">Encode ∥</div>
+        <div class="fnodes">
+          <span class="node">text_encoder</span>
+          <span class="tensor">→ T_EN[1,512,t]</span>
+          <span class="arrow">│</span>
+          <span class="node trt">bert</span>
+          <span class="arrow">→</span>
+          <span class="node">bert_encoder</span>
+          <span class="tensor">→ D_EN[1,512,t] fp16</span>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fstage">Style</div>
+        <div class="fnodes">
+          <span class="node trt">diffusion_steps</span>
+          <span class="tensor">→ S_PRED[1,256]</span>
+          <span class="arrow">→</span>
+          <span class="node">int_steps_1</span>
+          <span class="tensor">→ REF · S_OUT (α/β blend)</span>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fstage">Duration</div>
+        <div class="fnodes">
+          <span class="node trt">prosody_text_encoder</span>
+          <span class="arrow">→</span>
+          <span class="node trt">prosody_lstm</span>
+          <span class="arrow">→</span>
+          <span class="node trt">prosody_dur_proj</span>
+          <span class="tensor">→ DURATION[1,t,50] fp16</span>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fstage">Align ⚑</div>
+        <div class="fnodes">
+          <span class="node">int_steps_2</span>
+          <span class="tensor">→ EN[1,640,A] · ASR[1,512,A] &nbsp;&nbsp;<em>tokens → frames</em></span>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fstage">Prosody</div>
+        <div class="fnodes">
+          <span class="node trt">prosody_predictor_ftrain</span>
+          <span class="tensor">→ F0_PRED · N_PRED [1,2A]</span>
+          <span class="arrow">→</span>
+          <span class="node">prep_decoder</span>
+          <span class="tensor">→ [1,1,A]</span>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fstage">Vocode</div>
+        <div class="fnodes">
+          <span class="node trt">decoder</span>
+          <span class="tensor">→ X_OUT[1,512,2A]</span>
+          <span class="arrow">→</span>
+          <span class="node trt">generator</span>
+          <span class="tensor">→ AUDIO[1,1,600A]</span>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fstage">Emit</div>
+        <div class="fnodes">
+          <span class="node py">last_step</span>
+          <span class="arrow">→</span>
+          <span class="tensor">AUDIO[600A] @ 24 kHz</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><i class="swatch trt"></i>TensorRT engine (.plan)</span>
+    <span><i class="swatch"></i>ONNX Runtime (.onnx)</span>
+    <span><i class="swatch py"></i>Python backend</span>
+    <span>⚑ value-dependent output length</span>
+  </div>
+
+  <p class="tnote col"><em>t</em> = phoneme tokens, <em>A</em> = alignment frames. One alignment frame is 600 output samples, or exactly 25 ms of audio — the decoder doubles the frame rate and the vocoder's upsample rates <code>[10,5,3,2]</code> multiply by 300.</p>
+
+  <h3 class="col">Why each graph sits on the runtime it does</h3>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr><th>Model</th><th>Runtime</th><th>Character of the work</th><th>Reason for the assignment</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>frontend</td><td><span class="pill py">Python</span></td><td>Strings, dictionaries, file I/O</td><td>Not tensor math. Also caches style vectors in-process.</td></tr>
+        <tr><td>bert</td><td><span class="pill trt">TensorRT</span></td><td>12-layer ALBERT, attention-bound</td><td>Dense, shape-static, the largest single graph. Prime fusion target.</td></tr>
+        <tr><td>text_encoder</td><td><span class="pill ort">ORT</span></td><td>Conv stack + BiLSTM with packing</td><td><code>pack_padded_sequence</code> and recurrence; TRT gains little and risks a lot.</td></tr>
+        <tr><td>bert_encoder</td><td><span class="pill ort">ORT</span></td><td>One Linear 768→512</td><td>Too small to repay an engine handoff. Emits fp16 to pin the next boundary.</td></tr>
+        <tr><td>diffusion_steps</td><td><span class="pill trt">TensorRT</span></td><td><em>n</em> unrolled transformer denoise steps</td><td>Unrolling made it straight-line; that is exactly what TRT wants.</td></tr>
+        <tr><td>int_steps_1</td><td><span class="pill ort">ORT</span></td><td>Two lerps and a mask</td><td>Elementwise, microseconds. Engine overhead would dominate.</td></tr>
+        <tr><td>prosody_text_encoder</td><td><span class="pill trt">TensorRT</span></td><td>Stacked BiLSTM + AdaLayerNorm</td><td>Deep enough that fusion across the norm/LSTM alternation pays.</td></tr>
+        <tr><td>prosody_lstm</td><td><span class="pill trt">TensorRT</span></td><td>Single BiLSTM</td><td>fp32 weights, fp16 output — narrows the tensor crossing the next hop.</td></tr>
+        <tr><td>prosody_dur_proj</td><td><span class="pill trt">TensorRT</span></td><td>Linear 512→50</td><td>fp16 in, fp16 out; rides the same engine context as its neighbours.</td></tr>
+        <tr><td>int_steps_2</td><td><span class="pill ort">ORT</span> ⚑</td><td>Cumsum → scatter → matmul</td><td><strong>Output length depends on input values.</strong> TRT cannot build a profile for it.</td></tr>
+        <tr><td>prosody_predictor_ftrain</td><td><span class="pill trt">TensorRT</span></td><td>Shared LSTM + two AdaIN stacks</td><td>Two parallel residual branches; heavy, static, fuses well.</td></tr>
+        <tr><td>prep_decoder</td><td><span class="pill ort">ORT</span></td><td>Two strided 1-D convolutions</td><td>Split out so the decoder engine has a clean static profile. Tiny.</td></tr>
+        <tr><td>decoder</td><td><span class="pill trt">TensorRT</span></td><td>4 AdaIN residual blocks, 1024 ch</td><td>The second-heaviest graph. Large channel counts, ideal for tensor cores.</td></tr>
+        <tr><td>generator</td><td><span class="pill trt">TensorRT</span></td><td>HiFi-GAN, 300× upsampling</td><td>The heaviest by output volume — one frame becomes 300 samples.</td></tr>
+        <tr><td>last_step</td><td><span class="pill py">Python</span></td><td>Squeeze to 1-D float32</td><td>Keeps the ensemble's output shape independent of the vocoder's.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="col">
+  <div class="sec-head">
+    <p class="eyebrow">Numerics</p>
+    <h2>Where precision is spent</h2>
+  </div>
+
+  <p>Two different mechanisms are at work, and conflating them is a common source of confusion.</p>
+
+  <p><strong>Inside an engine</strong>, <code>trtexec --fp16</code> does not force half precision. It <em>permits</em> it: TensorRT autotunes layer by layer, timing fp16 and fp32 kernels and keeping whichever wins, subject to its own accuracy heuristics. You are granting a search space, not making a numerical decision.</p>
+
+  <p><strong>At a boundary</strong>, the ONNX graph's declared dtypes are a hard contract, because Triton copies the tensor between models. Three boundaries are pinned to fp16 on purpose: <code>D_EN</code> leaving <code>bert_encoder</code>, <code>X_OUT</code> leaving <code>prosody_lstm</code>, and <code>DURATION</code> leaving <code>prosody_dur_proj</code>. Each halves the bytes moved across a scheduler hop.</p>
+
+  <p>The pattern in the recurrent parts is deliberate and worth copying: <strong>compute in fp32, hand off in fp16.</strong> An LSTM accumulates error along the time axis — each step's output feeds the next, so a half-precision rounding error at <em>t</em> is still present at <em>t+200</em>. Convolutions and attention have no such accumulation path. So <code>prosody_lstm</code> keeps fp32 weights and casts only its result, while the convolutional decoder and vocoder are let loose in fp16 throughout.</p>
+
+  <div class="note">
+    <p>One consequence is invisible unless you look for it. <code>D_EN</code> arrives at <code>prosody_text_encoder</code> as fp16, but the first operation there concatenates it with an fp32 style vector — which silently promotes it straight back to fp32. The fp16 boundary saves bandwidth on the hop and buys nothing computationally. That is a defensible trade, but it should be a known one.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head col">
+    <p class="eyebrow">Shape budget</p>
+    <h2>Profiles are a promise about the future</h2>
+  </div>
+
+  <div class="col">
+    <p>A TensorRT engine is built for a shape <em>range</em>, declared as three points. <code>min</code> and <code>max</code> are correctness bounds — outside them the engine refuses to run. <code>opt</code> is the tuning target: TensorRT times its kernel candidates at that shape and picks winners there. Shapes far from <code>opt</code> still work, just on kernels chosen for someone else.</p>
+
+    <p>Because every graph in the chain has its own profile, the profiles have to agree about the same utterance. Reading them back through the frame arithmetic — one alignment frame is 25 ms — tells you what the deployed fleet can actually say:</p>
+  </div>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr><th>Engine</th><th>Profile axis</th><th class="num">min</th><th class="num">opt</th><th class="num">max</th><th class="num">max as audio</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>bert</td><td>TOKENS</td><td class="num">1</td><td class="num">128</td><td class="num">512</td><td class="num">512 phonemes</td></tr>
+        <tr><td>prosody_text_encoder</td><td>D_EN length</td><td class="num">4</td><td class="num">128</td><td class="num">512</td><td class="num">512 phonemes</td></tr>
+        <tr><td>prosody_lstm</td><td>D_OUT length</td><td class="num">1</td><td class="num">128</td><td class="num">512</td><td class="num">512 phonemes</td></tr>
+        <tr><td>prosody_dur_proj</td><td>X_OUT length</td><td class="num">4</td><td class="num">192</td><td class="num">1024</td><td class="num">over-provisioned</td></tr>
+        <tr><td>prosody_predictor_ftrain</td><td>EN frames</td><td class="num">1</td><td class="num">192</td><td class="num">768</td><td class="num">19.2 s</td></tr>
+        <tr><td>decoder</td><td>ASR frames</td><td class="num">4</td><td class="num">256</td><td class="num">1024</td><td class="num">25.6 s</td></tr>
+        <tr><td>generator</td><td>X_OUT frames</td><td class="num">4</td><td class="num">512</td><td class="num">1536</td><td class="num">19.2 s</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <p class="tnote">The fleet's real ceiling is <strong>19.2 seconds of audio per request</strong>, set jointly by <code>prosody_predictor_ftrain</code> and <code>generator</code>. The <code>decoder</code> engine is built for 25.6 s it can never be handed, and <code>prosody_dur_proj</code> for 1024 tokens where <code>bert</code> stops at 512 — both are wasted engine capacity rather than bugs, but they are the signature of profiles set per-graph rather than derived from one utterance budget.</p>
+
+    <p class="tnote">The <code>opt</code> points disagree more interestingly. <code>decoder</code> and <code>generator</code> are both tuned for a 6.4-second utterance; <code>prosody_predictor_ftrain</code> is tuned for 4.8 seconds. They are describing different sentences. Nothing fails — but two of the three heavy engines are running kernels selected for a length the third never produces.</p>
+  </div>
+
+  <h3 class="col">Why warmup sentences exist</h3>
+
+  <div class="col">
+    <p>The warmup list in the service is forty-odd Spanish sentences, and the striking thing about it is the distribution: production-length utterances of 200+ characters sitting next to four-character fragments like <code>'¿Con'</code> and <code>'Sin'</code>.</p>
+
+    <p>That is the shape profile seen from the serving side. An engine's kernel choice is baked at build time, but the <em>first</em> execution at a given shape still pays for context memory allocation, workspace binding and library-level heuristic caching. Warming only with long sentences leaves the short-utterance path cold — and short utterances are exactly what a conversational agent emits when it backchannels. The list is a deliberate sweep of the profile range so that every bucket a real caller will hit has been hit once already, at startup, by nobody.</p>
+  </div>
+</section>
+
+<section class="col">
+  <div class="sec-head">
+    <p class="eyebrow">Build vs. run</p>
+    <h2>Engines cannot be shipped</h2>
+  </div>
+
+  <p>A <code>.plan</code> file is not portable. It is tied to the GPU's compute capability, the TensorRT version and the CUDA version that produced it. An engine built on an L4 will not load on an A10, and one built against TensorRT 8.6 will not load on 10.x. This single fact dictates the entire deployment shape.</p>
+
+  <p>The consequence is that engine construction is a <em>runtime</em> step, not a build step. The container image ships ONNX; the download script explicitly refuses to fetch <code>.plan</code> files from S3 even if they are there. Engines are compiled on first boot on the machine that will run them.</p>
+
+  <p>Compiling eight engines takes minutes, and there are four replicas sharing one EFS volume. The entrypoint therefore implements a small distributed build protocol:</p>
+
+  <div class="pre"><span class="c"># per engine, on the shared volume</span>
+flock -x  <span class="c">→ acquire exclusive lock on &lt;engine&gt;.lock</span>
+  <span class="hl">re-check</span> if [ -f "$ENGINE_PATH" ]   <span class="c"># a peer may have finished while we waited</span>
+  trtexec --saveEngine=<span class="hl">$ENGINE.tmp</span>   <span class="c"># build to a temp name</span>
+  mv $ENGINE.tmp $ENGINE             <span class="c"># atomic rename: never a partial .plan</span>
+flock -u</div>
+
+  <p>Three properties are being bought here, and each maps to a failure that would otherwise happen. The <strong>double-check inside the lock</strong> stops four replicas from building the same engine four times. The <strong>temp-file-then-rename</strong> stops a crashed or OOM-killed build from leaving a truncated <code>.plan</code> that every subsequent boot would treat as valid. The <strong>persistent EFS volume</strong>, with <code>CLEANUP_ENABLED=false</code> and <code>FORCE_REBUILD=false</code> in production, means a pod restart or a scale-up event costs a download, not a rebuild.</p>
+
+  <div class="note">
+    <p>The trade being made is image portability against cold-start time. Because the fleet is pinned to L4 by node selector, the engines <em>could</em> have been baked into the image — turning a multi-minute first boot into a longer CI build. The current choice keeps the image architecture-agnostic and pushes the cost to a one-time event amortised across the volume's lifetime. Both are defensible; the one that is not is building engines in CI and shipping them to heterogeneous nodes.</p>
+  </div>
+</section>
+
+<section class="col">
+  <div class="sec-head">
+    <p class="eyebrow">Honest accounting</p>
+    <h2>Knobs connected to nothing</h2>
+  </div>
+
+  <p>Reading the pipeline end to end turns up several controls that are accepted, transported and then discarded. None of them produce an error; each simply has no effect. They are grouped here because they share a root cause — a graph boundary silently dropped something, and nothing in the system checks that a declared contract matches the graph behind it.</p>
+
+  <div class="gap">
+    <span class="tag">Dead knob</span>
+    <h4><code>NUM_STEPS</code> — diffusion step count</h4>
+    <p>The client sends it, the ensemble routes it, <code>config.pbtxt</code> declares it as a shape tensor, and the <code>trtexec</code> profile reserves a range of 1 to 10 for it. But the sampler loop is unrolled in Python during tracing, so the exporter folds the tensor away and the graph never had such an input. The value is transported across the whole stack and read by nothing.</p>
+    <p>Downstream, the service maps its user-facing <code>expressive_level</code> parameter onto this input. That parameter therefore has no audible effect.</p>
+  </div>
+
+  <div class="gap">
+    <span class="tag">Dead knob</span>
+    <h4><code>EMBEDDING_SCALE</code> — classifier-free guidance</h4>
+    <p>Accepted by the ensemble and passed to the <code>frontend</code>, which does not forward it; the diffusion graph never consumed it either. Real CFG would require running the style transformer twice per denoise step — conditional and masked — and blending, roughly doubling diffusion cost. That work was never done, but the parameter was left in the interface.</p>
+  </div>
+
+  <div class="gap">
+    <span class="tag">Divergence</span>
+    <h4>The hifigan frame shift</h4>
+    <p>The reference PyTorch path applies a one-frame shift to the expanded features before vocoding when the decoder is <code>hifigan</code>. The traced <code>int_steps_2</code> graph guards the same shift on a flag compared against a string it is never set to, so the shift never runs. Triton and the PyTorch reference therefore produce measurably different audio for the same input — which makes A/B validation against the reference misleading.</p>
+  </div>
+
+  <div class="gap">
+    <span class="tag">Throughput</span>
+    <h4>The micro-batcher does not batch</h4>
+    <p>The queue collects up to 8 requests, then issues them through <code>asyncio.gather</code> as 8 independent batch-of-1 Triton calls. That is a concurrency limiter, not batched inference — and it could not be otherwise, because every engine profile in the fleet is built for batch 1.</p>
+    <p>Two implementation details compound it: the queue lock is held across the entire in-flight batch, so no new request can enqueue while one is running; and the loop's wait interval is computed as <code>int(100/1000)</code>, which truncates to zero, turning the worker into a busy spin on a pod limited to a single CPU core.</p>
+  </div>
+
+  <p style="margin-top:26px">The generalisable lesson is that <strong>an ensemble's declared interface and its graphs' real interfaces drift silently apart</strong>. Triton validates a model's config against its own engine at load time, but nothing validates that an ensemble input reaches a consumer, or that a tensor a client sends is read by anybody. That check is cheap to write and belongs in CI.</p>
+</section>
+
+<section class="col">
+  <div class="sec-head">
+    <p class="eyebrow">Next</p>
+    <h2>Where the remaining gains are</h2>
+  </div>
+
+  <p>Ordered by expected return against effort, given the topology as it stands.</p>
+
+  <ol>
+    <li><strong>Collapse the prosody chain.</strong> <code>prosody_text_encoder → prosody_lstm → prosody_dur_proj</code> is three scheduler hops and two tensor copies for what is one computation with no branch between them. Exporting them as a single graph removes two hops per request with no numerical change. This is the cheapest structural win left.</li>
+    <li><strong>Fix the admission path before adding capacity.</strong> The lock-held-across-inference and the zero-length sleep are both a few lines, and on a single-core pod the spin is not free. Neither requires touching a model.</li>
+    <li><strong>Decide what <code>expressive_level</code> means.</strong> Either re-export <code>diffusion_steps</code> as an ONNX <code>Loop</code> so the step count becomes a real runtime input, or remove the parameter from the public interface. Shipping a knob that does nothing is worse than shipping neither.</li>
+    <li><strong>Derive the shape profiles from one utterance budget.</strong> Pick a maximum supported duration, propagate it through the frame arithmetic, and generate every <code>min</code>/<code>opt</code>/<code>max</code> from it. That removes the current over-provisioning and the mismatched <code>opt</code> points, and makes the ceiling a stated property rather than an emergent one.</li>
+    <li><strong>Then consider true batching.</strong> Real batch inference needs <code>max_batch_size &gt; 0</code>, engines rebuilt across a batch axis, and — the hard part — a padding strategy for the alignment step, whose output length differs per request in the batch. This is the largest available win and also the largest amount of work; it should not be started before the four items above are done, because each of them changes the number it would be measured against.</li>
+  </ol>
+
+  <div class="note">
+    <p><strong>A note on measurement.</strong> Every item above should be evaluated against the same fixed set of utterances spanning the profile range — the warmup list is already close to being that set. Optimisation work on a pipeline with this many stages is very easy to misattribute; a change that helps 6-second utterances and hurts 1-second ones will look like a win on any benchmark that only uses paragraphs.</p>
+  </div>
+</section>
+
+<footer>
+  Sources: <code>VoicingAI/PR-TTS-Service</code> @ <code>client/telmex-tts</code> (entrypoint.sh, app/, helm-charts3/) and
+  <code>VoicingAI/styletts2_triton_model_registry</code> (export pipeline, ensemble template).<br>
+  Frame arithmetic derived from the vocoder upsample rates and verified against the deployed shape profiles.
+  Timeline dates taken from commit history, Feb 2025 – Jun 2026.
+</footer>
+
+</div>

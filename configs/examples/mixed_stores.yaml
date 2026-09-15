@@ -1,0 +1,65 @@
+# Fuller config: checkpoint in S3, PLBERT in Backblaze B2, one speaker's
+# reference audio on local disk.
+#
+#   python convert.py configs/examples/mixed_stores.yaml --dry-run
+#
+# Credentials are read from the environment variables named below -- put them
+# in .env (see .env.example). They are never read from a file in the repo.
+
+model_id: SpanishV2
+
+stores:
+  prod:
+    type: s3
+    bucket: verizon-audio-main
+    access_key_env: AWS_ACCESS_KEY
+    secret_key_env: AWS_SECRET_KEY
+
+  # Any S3-compatible store works by pointing endpoint_url at it. Find the
+  # B2 endpoint for your key with:
+  #   curl -s -u "<keyId>:<appKey>" \
+  #     https://api.backblazeb2.com/b2api/v3/b2_authorize_account \
+  #     | python -c "import json,sys; print(json.load(sys.stdin)['apiInfo']['storageApi']['s3ApiUrl'])"
+  b2:
+    type: s3
+    bucket: TTS-STT-servers
+    endpoint_url: https://s3.us-east-005.backblazeb2.com
+    access_key_env: B2_KEY_ID
+    secret_key_env: B2_APP_KEY
+
+  # A local store with a root: paths below are resolved under it.
+  scratch:
+    type: local
+    root: /data/tts
+
+defaults:
+  store: prod           # any path without an explicit `store:` uses this
+
+checkpoint:
+  model: prodttsmodels/spanish-v2/model.pth
+  config: prodttsmodels/spanish-v2/config_ft.yml
+
+plbert:
+  store: b2
+  path: PLBERTs/multi
+
+speakers:
+  # Inherits defaults.store (prod).
+  sofia:
+    reference: prodttsmodels/spanish-v2/sofia.wav
+    language: es
+
+  # Overrides it per speaker.
+  mateo:
+    store: scratch
+    reference: auditions/mateo.wav
+    language: es
+
+export:
+  device: cuda:0
+  modules: all
+  diffusion_num_steps: 3    # baked into diffusion_steps.onnx at trace time
+
+triton:
+  template: triton_model_repoistory_with_diffusion
+  output_root: triton_repos

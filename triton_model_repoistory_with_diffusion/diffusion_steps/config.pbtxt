@@ -1,14 +1,20 @@
+# Style diffusion sampler.
+#
+# The sampler loop is unrolled into the graph at export time, so the number of
+# diffusion steps is a property of this .onnx/.plan, not a runtime input. Set
+# `export.diffusion_num_steps` in the export config and re-export to change it.
+# (Making it dynamic requires rewriting ADPM2ONNX's loop as an ONNX `Loop` op.)
 name: "diffusion_steps"
 backend: "tensorrt"
+max_batch_size: 0
 
 input [
-  { name: "BERT_DUR",   data_type: TYPE_FP32, dims: [ -1, -1, 768 ] },
-  { name: "REF_S", data_type: TYPE_FP32, dims: [ -1, 256 ] },
-  { name: "NUM_STEPS", data_type: TYPE_INT32, dims: [ 1 ], is_shape_tensor: true }
+  { name: "BERT_DUR", data_type: TYPE_FP32, dims: [ -1, -1, 768 ] },
+  { name: "REF_S",    data_type: TYPE_FP32, dims: [ -1, 256 ] }
 ]
 
 output [
   { name: "S_PRED",   data_type: TYPE_FP32, dims: [ -1, -1 ] }
 ]
 
-instance_group [ { kind: KIND_GPU, count: 1} ]
+instance_group [ { kind: KIND_GPU, count: 1 } ]

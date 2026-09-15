@@ -1,0 +1,32 @@
+{
+  "multi": {
+    "plbert": "PLBERTs/multi",
+    "languages": [
+      "de",
+      "el",
+      "en",
+      "en-uk",
+      "es",
+      "fi",
+      "fr",
+      "it",
+      "pt",
+      "ru",
+      "sv"
+    ]
+  },
+  "multi_indic": {
+    "plbert": "PLBERTs/multi_indic",
+    "languages": [
+      "bn",
+      "gu",
+      "hi",
+      "kn",
+      "ml",
+      "mr",
+      "pa",
+      "ta",
+      "te"
+    ]
+  }
+}

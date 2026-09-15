@@ -1,0 +1,36 @@
+# Minimal config: everything already on disk, nothing to download.
+#
+#   python convert.py configs/examples/local.yaml --dry-run
+#   python convert.py configs/examples/local.yaml
+#
+# With no `stores:` block every path is read straight off the filesystem.
+
+model_id: my-voice
+
+checkpoint:
+  model: /data/tts/my-voice/model.pth
+  config: /data/tts/my-voice/config_ft.yml
+
+# Directory holding config.yml + step_<N>.t7
+plbert: /data/tts/plbert/multi
+
+speakers:
+  nina:
+    reference: /data/tts/my-voice/nina.wav
+    language: en
+
+export:
+  device: cuda:0        # falls back to CPU automatically if there is no GPU
+  opset: 17
+  modules: all          # or a list, e.g. [bert, text_encoder, generator]
+  overwrite: false      # true re-exports graphs that already exist
+  verify: true          # compare every graph against PyTorch after export
+  strict: true          # stop on the first failure
+
+triton:
+  template: triton_model_repoistory_with_diffusion
+  output_root: triton_repos
+
+style:
+  alpha: 0.3            # acoustic style: diffusion prediction vs reference
+  beta: 0.7             # prosodic style: same blend

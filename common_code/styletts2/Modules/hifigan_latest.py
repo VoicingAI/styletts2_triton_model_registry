@@ -526,22 +526,12 @@ class Decoder_block(nn.Module):
 
         
     def forward(self, asr, F0, N, s):
-        
-        if self.training:
-            downlist = [0, 3, 7]
-            F0_down = downlist[random.randint(0, 2)]
-            downlist = [0, 3, 7, 15]
-            N_down = downlist[random.randint(0, 3)]
-            if F0_down:
-                F0_curve = nn.functional.conv1d(F0_curve.unsqueeze(1), torch.ones(1, 1, F0_down).to('cuda'), padding=F0_down//2).squeeze(1) / F0_down
-            if N_down:
-                N = nn.functional.conv1d(N.unsqueeze(1), torch.ones(1, 1, N_down).to('cuda'), padding=N_down//2).squeeze(1)  / N_down
+        """asr/F0/N are [B, C, T] at the same frame rate; F0 and N have C == 1.
 
-        
-        
-        # F0 = self.F0_conv(F0_curve.unsqueeze(1))
-        # N = self.N_conv(N.unsqueeze(1))
-        
+        The strided F0/N convolutions live in Decoder_preprocessing, and the
+        training-time curve-smoothing augmentation is deliberately absent --
+        this class is only ever traced for export.
+        """
         x = torch.cat([asr, F0, N], axis=1)
         x = self.encode(x, s)
     
@@ -571,11 +561,4 @@ class Generator_block(nn.Module):
         self.generator = Generator(style_dim, resblock_kernel_sizes, upsample_rates, upsample_initial_channel, resblock_dilation_sizes, upsample_kernel_sizes)
   
     def forward(self, x, s, F0_curve):
-        
-        print("x shape:", x.shape)
-        print("s shape:", s.shape)
-        print("F0_curve shape:", F0_curve.shape)
-        
-                
-        x = self.generator(x, s, F0_curve)
-        return x
+        return self.generator(x, s, F0_curve)

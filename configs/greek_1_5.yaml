@@ -1,0 +1,47 @@
+# greek_1_5 — the Greek voices chloe and dora, from Backblaze B2.
+#
+#   python convert.py configs/greek_1_5.yaml --dry-run
+#   python convert.py configs/greek_1_5.yaml
+#
+# Credentials come from .env (see .env.example); nothing here holds a key.
+
+model_id: greek_1_5
+
+stores:
+  b2:
+    type: s3
+    bucket: TTS-STT-servers
+    endpoint_url: https://s3.us-east-005.backblazeb2.com
+    access_key_env: B2_KEY_ID
+    secret_key_env: B2_APP_KEY
+
+defaults:
+  store: b2
+
+checkpoint:
+  model: prodttsmodels/greek_1_5/model.pth
+  config: prodttsmodels/greek_1_5/config_ft.yml
+
+# Greek resolves to the multilingual PLBERT (config/json_files/language_plbert.json).
+plbert:
+  path: PLBERTs/multi
+
+speakers:
+  chloe:
+    reference: prodttsmodels/reference_audios/chloe/reference.wav
+    language: el
+  dora:
+    reference: prodttsmodels/reference_audios/dora/reference.wav
+    language: el
+
+export:
+  device: cuda:0
+  opset: 17
+  modules: all
+  verify: true
+  strict: true
+  diffusion_num_steps: 3
+
+triton:
+  template: triton_model_repoistory_with_diffusion
+  output_root: triton_repos

@@ -1,0 +1,28 @@
+# Core runtime -------------------------------------------------------------
+# torch/torchaudio are intentionally unpinned here: install the build that
+# matches your CUDA driver first, e.g.
+#   pip install torch==2.2.2 torchaudio==2.2.2 --index-url https://download.pytorch.org/whl/cu121
+torch>=2.1
+torchaudio>=2.1
+
+# ONNX export + verification ----------------------------------------------
+onnx>=1.15
+onnxruntime>=1.17          # swap for onnxruntime-gpu to verify on device
+
+# Model definition ---------------------------------------------------------
+transformers>=4.40         # AlbertModel, used by PLBERT
+munch>=4.0
+PyYAML>=6.0
+
+# Audio --------------------------------------------------------------------
+librosa>=0.10
+soundfile>=0.12
+numpy>=1.24
+
+# Text frontend ------------------------------------------------------------
+phonemizer>=3.2            # needs the espeak-ng system package
+nltk>=3.8
+
+# Asset stores -------------------------------------------------------------
+boto3>=1.34                # AWS S3 and any S3-compatible store (Backblaze B2, ...)
+python-dotenv>=1.0

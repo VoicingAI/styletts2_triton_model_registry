@@ -1,0 +1,62 @@
+{
+  "bn": {
+    "espeak": "bn"
+  },
+  "de": {
+    "espeak": "de"
+  },
+  "el": {
+    "espeak": "el"
+  },
+  "en": {
+    "espeak": "en-us"
+  },
+  "en-uk": {
+    "espeak": "en-gb"
+  },
+  "es": {
+    "espeak": "es"
+  },
+  "fi": {
+    "espeak": "fi"
+  },
+  "fr": {
+    "espeak": "fr-fr"
+  },
+  "gu": {
+    "espeak": "gu"
+  },
+  "hi": {
+    "espeak": "hi"
+  },
+  "it": {
+    "espeak": "it"
+  },
+  "kn": {
+    "espeak": "kn"
+  },
+  "ml": {
+    "espeak": "ml"
+  },
+  "mr": {
+    "espeak": "mr"
+  },
+  "pa": {
+    "espeak": "pa"
+  },
+  "pt": {
+    "espeak": "pt"
+  },
+  "ru": {
+    "espeak": "ru"
+  },
+  "sv": {
+    "espeak": "sv"
+  },
+  "ta": {
+    "espeak": "ta"
+  },
+  "te": {
+    "espeak": "te"
+  }
+}
