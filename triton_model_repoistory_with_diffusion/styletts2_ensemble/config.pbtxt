@@ -1,3 +1,20 @@
+# StyleTTS2 end-to-end ensemble.
+#
+# text -> frontend (phonemize + tokenize + load speaker style)
+#      -> text_encoder / bert -> bert_encoder
+#      -> diffusion_steps (sample a style) -> int_steps_1 (blend with reference)
+#      -> prosody_* (durations, then F0 and energy)
+#      -> int_steps_2 (build the alignment, expand to frames)
+#      -> prep_decoder -> decoder -> generator -> last_step (squeeze to 1-D)
+#
+# The number of diffusion steps is fixed at export time, not per request --
+# see diffusion_steps/config.pbtxt.
+#
+# EMBEDDING_SCALE (classifier-free guidance) used to be accepted here and then
+# silently dropped: the frontend never forwarded it and DiffusionONNX never
+# consumed it. It has been removed rather than left as a no-op knob. Restoring
+# it means running StyleTransformer1d twice per denoise step (conditional and
+# masked) and blending -- roughly 2x the diffusion cost.
 name: "styletts2_ensemble"
 platform: "ensemble"
 max_batch_size : 0
@@ -6,9 +23,7 @@ input [
   { name: "TEXT",     data_type: TYPE_STRING, dims: [ 1,1 ] },
   { name: "SPEAKER",  data_type: TYPE_STRING, dims: [ 1,1 ] },
   { name: "LANGUAGE", data_type: TYPE_STRING, dims: [ 1,1 ] },
-  { name: "SPEED",    data_type: TYPE_FP32,   dims: [ 1, 1 ] }, 
-  { name: "EMBEDDING_SCALE", data_type: TYPE_FP32,   dims: [ 1, 1 ] },
-  { name: "NUM_STEPS", data_type: TYPE_INT32, dims: [ 1 ] }
+  { name: "SPEED",    data_type: TYPE_FP32,   dims: [ 1, 1 ] }
 ]
 
 output [
@@ -23,8 +38,7 @@ ensemble_scheduling {
       input_map { key: "TEXT", value: "TEXT" },
       input_map { key: "SPEAKER", value: "SPEAKER" },
       input_map { key: "LANGUAGE", value: "LANGUAGE" },
-      input_map { key: "SPEED", value: "SPEED" },
-      input_map { key: "EMBEDDING_SCALE", value: "EMBEDDING_SCALE" }
+      input_map { key: "SPEED", value: "SPEED" }
 
       output_map  { key: "ALPHA", value: "alpha" },
       output_map  { key: "BETA", value: "BETA" },
@@ -63,8 +77,7 @@ ensemble_scheduling {
       model_name: "diffusion_steps"
       model_version: 1
       input_map { key: "BERT_DUR", value: "bert_dur" },
-      input_map { key: "REF_S", value: "ref_s" },
-      input_map { key: "NUM_STEPS", value: "NUM_STEPS" }
+      input_map { key: "REF_S", value: "ref_s" }
 
       output_map  { key: "S_PRED", value: "s_pred" }
     },

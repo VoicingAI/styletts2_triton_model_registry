@@ -5,3 +5,6 @@ triton_repos/
 __pycache__/
 .vscode/
 .env
+model_files
+*.egg-info/
+.pytest_cache/

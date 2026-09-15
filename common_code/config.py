@@ -1,133 +1,150 @@
-# common_code/config.py
+"""Static JSON configuration: speakers, languages and PLBERT variants.
+
+Loaded once at import. The files live in ``config/json_files/`` and are resolved
+relative to *this file*, not the working directory — the Triton python backends
+import this module from inside a model repository, where the cwd is Triton's.
+
+  speaker_configs.json    per-speaker object-store keys for model/config/audio
+  speaker_languages.json  language -> {speaker: model_id}
+  language_codes.json     language -> {espeak: <espeak-ng voice>}
+  language_plbert.json    PLBERT variant -> {plbert: <path>, languages: [...]}
+"""
+
+from __future__ import annotations
+
 import json
 import os
 from pathlib import Path
-
 from typing import Dict, Iterable, Tuple
 
-def load_json_config(file_path: str) -> dict:
-    """Loads a JSON file."""
+__all__ = [
+    "CONFIG_BASE_DIR",
+    "SPEAKER_S3_CONFIG",
+    "SPEAKER_LANGS_CONFIG",
+    "LANGUAGE_CODES_CONFIG",
+    "LANGUAGE_PLBERT_CONFIG",
+    "SPEAKER_MODEL_MAP",
+    "get_supported_languages",
+    "get_espeak_voice",
+    "get_plbert_group_for_language",
+    "get_plbert_relative_path",
+    "get_plbert_dir",
+]
+
+# common_code/config.py -> common_code/ -> repo root
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+CONFIG_BASE_DIR = Path(
+    os.getenv("STYLETTS2_CONFIG_DIR", _REPO_ROOT / "config" / "json_files")
+)
+
+
+def load_json_config(file_path: str | os.PathLike, *, required: bool = True) -> dict:
+    """Read a JSON config.
+
+    Missing or malformed files raise by default. The original swallowed both
+    and returned ``{}``, which turned a typo'd path into an empty speaker map
+    and a confusing failure several layers away.
+    """
+    path = Path(file_path)
     try:
-        with open(file_path, "r") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError) as e:
-        print(f"Warning: Failed to load {file_path} - {e}")
+        with path.open() as handle:
+            return json.load(handle)
+    except FileNotFoundError:
+        if required:
+            raise FileNotFoundError(
+                f"config file not found: {path}\n"
+                f"Expected it under {CONFIG_BASE_DIR}. Set STYLETTS2_CONFIG_DIR "
+                f"to point somewhere else."
+            ) from None
         return {}
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{path} is not valid JSON: {exc}") from exc
 
-# Define base directory for config files
-# This assumes the script is run from the project root.
-CONFIG_BASE_DIR = Path("./config/json_files")
 
-# Load all necessary JSON configurations
-SPEAKER_S3_CONFIG = load_json_config(CONFIG_BASE_DIR / "speaker_configs.json")
-SPEAKER_LANGS_CONFIG = load_json_config(CONFIG_BASE_DIR / "speaker_languages.json")
-LANGUAGE_CODES_CONFIG = load_json_config(CONFIG_BASE_DIR / "language_codes.json")
-LANGUAGE_PLBERT_CONFIG = load_json_config(CONFIG_BASE_DIR / "language_plbert.json")
+SPEAKER_S3_CONFIG: Dict = load_json_config(CONFIG_BASE_DIR / "speaker_configs.json")
+SPEAKER_LANGS_CONFIG: Dict = load_json_config(CONFIG_BASE_DIR / "speaker_languages.json")
+LANGUAGE_CODES_CONFIG: Dict = load_json_config(CONFIG_BASE_DIR / "language_codes.json")
+LANGUAGE_PLBERT_CONFIG: Dict = load_json_config(CONFIG_BASE_DIR / "language_plbert.json")
 
-# Create a master mapping for easy lookup
-# Maps (speaker, lang) -> model_id
-SPEAKER_MODEL_MAP = {}
-for lang, speakers in SPEAKER_LANGS_CONFIG.items():
-    for speaker, model_id in speakers.items():
-        SPEAKER_MODEL_MAP[(speaker, lang)] = model_id
+# (speaker, language) -> model_id
+SPEAKER_MODEL_MAP: Dict[Tuple[str, str], str] = {
+    (speaker, language): model_id
+    for language, speakers in SPEAKER_LANGS_CONFIG.items()
+    for speaker, model_id in speakers.items()
+}
 
 
 def get_supported_languages() -> Iterable[str]:
     return LANGUAGE_CODES_CONFIG.keys()
 
 
-def _resolve_plbert_entry(lang: str) -> Tuple[str, Dict]:
-    lang = (lang or "").lower()
-
-    entry = LANGUAGE_PLBERT_CONFIG.get(lang, {})
-    if entry and "plbert" in entry and "languages" not in entry:
-        return lang, entry
-
-    for group_key in ("multi", "multi_indic"):
-        group_cfg = LANGUAGE_PLBERT_CONFIG.get(group_key, {})
-        languages = group_cfg.get("languages", [])
-        if lang in languages:
-            return group_key, group_cfg
-
-    if entry and "plbert" in entry:
-        return lang, entry
-
-    fallback = LANGUAGE_PLBERT_CONFIG.get("multi", {})
-    return "multi", fallback
+def get_espeak_voice(language: str) -> str:
+    """espeak-ng voice name for a language code (falls back to the code itself)."""
+    entry = LANGUAGE_CODES_CONFIG.get((language or "").lower(), {})
+    return entry.get("espeak") or language
 
 
-def get_plbert_group_for_language(lang: str) -> str:
-    group, _ = _resolve_plbert_entry(lang)
-    return group
+def _resolve_plbert_entry(language: str) -> Tuple[str, Dict]:
+    """Return ``(group name, group config)`` for a language.
+
+    A language may either name its own PLBERT directly or belong to a grouped
+    one (``multi``, ``multi_indic``). Falls back to ``multi``.
+    """
+    language = (language or "").lower()
+
+    entry = LANGUAGE_PLBERT_CONFIG.get(language, {})
+    if entry.get("plbert") and "languages" not in entry:
+        return language, entry
+
+    for group, config in LANGUAGE_PLBERT_CONFIG.items():
+        if language in config.get("languages", []):
+            return group, config
+
+    if entry.get("plbert"):
+        return language, entry
+
+    return "multi", LANGUAGE_PLBERT_CONFIG.get("multi", {})
 
 
-def _case_variants(segment: str) -> Iterable[str]:
-    entries = {segment, segment.lower(), segment.upper(), segment.capitalize()}
-    return [s for s in entries if s]
+def get_plbert_group_for_language(language: str) -> str:
+    return _resolve_plbert_entry(language)[0]
 
 
-def _expand_path_variants(parts: Iterable[str]) -> Iterable[Tuple[str, ...]]:
-    variants = [tuple()]
-    for part in parts:
-        new_variants = []
-        for existing in variants:
-            for variant in _case_variants(part):
-                new_variants.append(existing + (variant,))
-        variants = new_variants
-    return variants
+def get_plbert_relative_path(language: str) -> str:
+    """Store-relative path to the PLBERT for a language, e.g. ``PLBERTs/multi``.
+
+    This is what goes in an export config's ``plbert.path``.
+    """
+    group, entry = _resolve_plbert_entry(language)
+    path = (entry.get("plbert") or "").strip("/")
+    if not path:
+        raise KeyError(
+            f"no PLBERT configured for language '{language}' (resolved to group "
+            f"'{group}'). Add it to {CONFIG_BASE_DIR / 'language_plbert.json'}."
+        )
+    return path
 
 
-def get_plbert_dir(base_dir: str, lang: str) -> str:
-    group, entry = _resolve_plbert_entry(lang)
-    rel_path = (entry.get("plbert") or "").strip("/")
+def get_plbert_dir(base_dir: str | os.PathLike, language: str) -> str:
+    """Locate a language's PLBERT directory beneath *base_dir*.
 
-    prefixes = [
-        (),
-        ("tts", "PLBERTs"),
-        ("tts", "plberts"),
-        ("tts", "PLBERT"),
-        ("tts", "plbert"),
-        ("PLBERT",),
-        ("PLBERTs",),
-        ("plbert",),
-        ("plberts",),
-    ]
+    A directory qualifies only if it contains ``config.yml``. Tries the
+    configured path first, then the bare group name — the original tried 100+
+    case and prefix permutations, which turned a wrong ``base_dir`` into an
+    unreadable error listing every one of them.
+    """
+    base = Path(base_dir)
+    group = get_plbert_group_for_language(language)
+    relative = get_plbert_relative_path(language)
 
-    group_variants = {g for g in _case_variants(group)} if group else set()
-    rel_parts = tuple(part for part in rel_path.split('/') if part)
+    candidates = [base / relative, base / group, base / "PLBERTs" / group, base / "PLBERT" / group]
 
-    search_order = []
-    seen = set()
+    for candidate in candidates:
+        if (candidate / "config.yml").is_file():
+            return str(candidate)
 
-    def _register(path_parts: Tuple[str, ...]):
-        if not path_parts:
-            return
-        full_path = os.path.join(base_dir, *path_parts)
-        if full_path not in seen:
-            seen.add(full_path)
-            search_order.append(full_path)
-
-    if rel_parts:
-        for prefix in prefixes:
-            for variant in _expand_path_variants(prefix + rel_parts):
-                _register(variant)
-
-    for prefix in prefixes:
-        for variant in group_variants:
-            _register(tuple(prefix) + (variant,))
-        if rel_parts:
-            for variant in group_variants:
-                _register(tuple(prefix) + rel_parts + (variant,))
-
-    if not search_order:
-        candidate = os.path.join(base_dir, rel_path or group)
-        raise FileNotFoundError(f"Unable to resolve PLBERT directory for language '{lang}' (tried '{candidate}').")
-
-    for candidate in search_order:
-        if os.path.isfile(os.path.join(candidate, "config.yml")):
-            return candidate
-
-    first = search_order[0]
+    tried = "\n  ".join(str(c) for c in candidates)
     raise FileNotFoundError(
-        f"Unable to locate PLBERT assets for language '{lang}'. Looked in: {', '.join(search_order)}."
+        f"no PLBERT for language '{language}' (group '{group}') under {base}.\n"
+        f"Looked for a directory containing config.yml at:\n  {tried}"
     )

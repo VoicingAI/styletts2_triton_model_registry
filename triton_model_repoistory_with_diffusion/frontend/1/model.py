@@ -1,158 +1,231 @@
+"""Triton python backend: text -> phoneme tokens, plus the speaker's style.
+
+Runs first in the ensemble. Everything downstream is a fixed-shape tensor
+graph; all the string handling, phonemization and per-speaker asset loading
+happens here.
+
+Deliberately numpy-only: style vectors are loaded from .npy, and the padding
+mask is a comparison. Importing torch here would pull a multi-gigabyte,
+CUDA-linked dependency into every Python backend process to read 256 floats.
+A .pt file is still accepted, but only if torch happens to be installed.
+
+Configuration comes from `parameters` in config.pbtxt:
+  REFERENCE_STYLES_DIR  directory of <speaker>.npy style vectors
+                        (default /workspace/reference_styles)
+  DEFAULT_LANGUAGE      language used when a request omits one (default "en")
+"""
+
 import json
 import os
 import re
 import sys
 from typing import Dict, List
-import torch
 
 import numpy as np
 import triton_python_backend_utils as pb_utils
 from nltk.tokenize import word_tokenize
 
+# common_code is a package, so its *parent* has to be importable — inserting
+# the package directory itself makes `import common_code.x` fail.
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-COMMON = os.path.abspath(os.path.join(_THIS_DIR, "../../../../common_code"))
-sys.path.insert(0, COMMON)
+for _candidate in (
+    os.path.abspath(os.path.join(_THIS_DIR, "../../..")),      # repo checked out next to the model repo
+    os.path.abspath(os.path.join(_THIS_DIR, "../../../..")),   # model repo nested one deeper
+    "/workspace",
+):
+    if os.path.isdir(os.path.join(_candidate, "common_code")) and _candidate not in sys.path:
+        sys.path.insert(0, _candidate)
+        break
 
 from common_code.config import SPEAKER_MODEL_MAP, get_supported_languages
 from common_code.phonemizer_utils import PhonemizerManager
 from common_code.text_utils import TextCleaner
 
+DEFAULT_STYLES_DIR = "/workspace/reference_styles"
+
+# Token id 16 is the phoneme-sequence boundary marker in the symbol table.
+BOUNDARY_TOKEN = 16
+
+# These voices were trained with an explicit trailing boundary token; the rest
+# were not, and adding one changes their prosody at the end of an utterance.
+SPEAKERS_NEEDING_TRAILING_BOUNDARY = frozenset({"chloe", "dora", "regina", "isha"})
+
 
 class TritonPythonModel:
     def initialize(self, args):
-        
-        
-        cfg = json.loads(args["model_config"])
-        params = cfg.get("parameters", {})
-        
+        config = json.loads(args["model_config"])
+        parameters = config.get("parameters", {})
 
-        self.default_language = "en"
+        def param(key, default):
+            entry = parameters.get(key)
+            value = entry.get("string_value") if isinstance(entry, dict) else entry
+            return value or default
+
+        self.styles_dir = param("REFERENCE_STYLES_DIR", DEFAULT_STYLES_DIR)
+        self.default_language = param("DEFAULT_LANGUAGE", "en")
+
         self.cleaner = TextCleaner()
-        self.special_eos_speakers = {"chloe", "dora", "regina", "isha"}
         self.phoneme_cleanup = re.compile(r"\([^)]*\)")
-        
+        self.reference_styles: Dict[str, np.ndarray] = {}
 
-        supported_langs = {lang for _, lang in SPEAKER_MODEL_MAP.keys()}
-        if not supported_langs:
-            supported_langs = set(get_supported_languages())
-        self.phonemizer_manager = PhonemizerManager(languages=supported_langs)
-        
-        self.reference_styles = {}
+        languages = {lang for _, lang in SPEAKER_MODEL_MAP} or set(get_supported_languages())
+        if not languages:
+            languages = {self.default_language}
+        self.phonemizer_manager = PhonemizerManager(languages=languages)
 
+        # Fail at load time rather than on the first request.
+        if not os.path.isdir(self.styles_dir):
+            raise pb_utils.TritonModelException(
+                f"REFERENCE_STYLES_DIR '{self.styles_dir}' does not exist. Mount "
+                f"the export's reference_styles/ directory there, or set the "
+                f"parameter in config.pbtxt."
+            )
+
+    # ── assets ───────────────────────────────────────────────────────────
+    def _load_reference_style(self, speaker: str) -> np.ndarray:
+        """Return the speaker's [1, 256] style vector, cached after first use."""
+        if speaker in self.reference_styles:
+            return self.reference_styles[speaker]
+
+        # <speaker>.npy is what convert.py writes and the only format that
+        # loads without torch. The .pt names are accepted so an existing
+        # deployment keeps working mid-migration.
+        candidates = [
+            f"{speaker}.npy",
+            f"{speaker}.pt",
+            f"{speaker}_style.pt",
+            f"reference_style_{speaker}.pt",
+        ]
+        for candidate in candidates:
+            path = os.path.join(self.styles_dir, candidate)
+            if os.path.isfile(path):
+                break
+        else:
+            available = sorted(
+                f for f in os.listdir(self.styles_dir) if f.endswith((".npy", ".pt"))
+            )
+            raise ValueError(
+                f"no style vector for speaker '{speaker}' in {self.styles_dir} "
+                f"(looked for {candidates}); available: {available}"
+            )
+
+        if path.endswith(".npy"):
+            array = np.load(path).astype(np.float32)
+        else:
+            try:
+                import torch
+            except ImportError as exc:
+                raise ValueError(
+                    f"only a .pt style vector exists for '{speaker}' and torch is not "
+                    f"installed. Re-run the exporter to produce {speaker}.npy, which "
+                    f"loads without torch."
+                ) from exc
+            array = (
+                torch.load(path, map_location="cpu", weights_only=True)
+                .detach().float().numpy().astype(np.float32)
+            )
+
+        if array.ndim == 1:
+            array = array[None, :]
+        if array.shape[-1] != 256:
+            raise ValueError(
+                f"style vector for '{speaker}' has {array.shape[-1]} dims, expected 256"
+            )
+
+        self.reference_styles[speaker] = array
+        return array
+
+    # ── text ─────────────────────────────────────────────────────────────
     def _text_to_tokens(self, text: str, language: str, speaker: str) -> List[int]:
-        backend = self.phonemizer_manager.get_backend(language) or self.phonemizer_manager.get_backend(self.default_language)
+        backend = (
+            self.phonemizer_manager.get_backend(language)
+            or self.phonemizer_manager.get_backend(self.default_language)
+        )
         if backend is None:
-            raise ValueError(f"No phonemizer available for language '{language}'.")
+            raise ValueError(
+                f"no phonemizer backend for language '{language}' or fallback "
+                f"'{self.default_language}'"
+            )
 
-        phoneme = backend.phonemize([text.strip()])[0]
+        phonemes = backend.phonemize([text.strip()])[0]
         try:
-            phoneme = " ".join(word_tokenize(phoneme))
+            phonemes = " ".join(word_tokenize(phonemes))
         except LookupError:
             import nltk
+            nltk.download("punkt", quiet=True)
+            nltk.download("punkt_tab", quiet=True)
+            phonemes = " ".join(word_tokenize(phonemes))
+        phonemes = self.phoneme_cleanup.sub("", phonemes)
 
-            nltk.download('punkt', quiet=True)
-            phoneme = " ".join(word_tokenize(phoneme))
-        phoneme = self.phoneme_cleanup.sub("", phoneme)
+        token_ids = self.cleaner(phonemes)
+        if not token_ids:
+            raise ValueError(f"text produced no usable phonemes: {text!r}")
 
-        token_ids = self.cleaner(phoneme)
-        token_ids = [0] + token_ids
-        
-        token_ids.insert(1, 16)
-        if speaker in self.special_eos_speakers and token_ids[-1] != 16:
-            token_ids.append(16)
-
+        # Leading pad, then the boundary marker.
+        token_ids = [0, BOUNDARY_TOKEN] + token_ids
+        if speaker in SPEAKERS_NEEDING_TRAILING_BOUNDARY and token_ids[-1] != BOUNDARY_TOKEN:
+            token_ids.append(BOUNDARY_TOKEN)
         return token_ids
-    
-    def length_to_mask(self,lengths):
-        mask = torch.arange(lengths.max()).unsqueeze(0).expand(lengths.shape[0], -1).type_as(lengths)
-        mask = torch.gt(mask+1, lengths.unsqueeze(1))
-        return mask
+
+    @staticmethod
+    def _length_to_mask(lengths: np.ndarray) -> np.ndarray:
+        """True at padded positions, shape [batch, max(lengths)]."""
+        positions = np.arange(int(lengths.max()), dtype=np.int64)[None, :]
+        return positions + 1 > lengths[:, None]
+
+    # ── request handling ─────────────────────────────────────────────────
+    @staticmethod
+    def _scalar_string(request, name: str, default=None):
+        tensor = pb_utils.get_input_tensor_by_name(request, name)
+        if tensor is None:
+            return default
+        return tensor.as_numpy()[0][0].decode("utf-8")
 
     def execute(self, requests):
-        responses: List[pb_utils.InferenceResponse] = []
+        responses = []
 
         for request in requests:
             try:
-                text_tensor = pb_utils.get_input_tensor_by_name(request, "TEXT")
-                speaker_tensor = pb_utils.get_input_tensor_by_name(request, "SPEAKER")
-                language_tensor = pb_utils.get_input_tensor_by_name(request, "LANGUAGE")
+                text = self._scalar_string(request, "TEXT")
+                speaker = self._scalar_string(request, "SPEAKER")
+                if not text or not speaker:
+                    raise ValueError("TEXT and SPEAKER are required and must be non-empty")
+
+                language = (self._scalar_string(request, "LANGUAGE") or self.default_language).lower()
+
                 speed_tensor = pb_utils.get_input_tensor_by_name(request, "SPEED")
-                embedding_scale_tensor = pb_utils.get_input_tensor_by_name(request, "EMBEDDING_SCALE")
+                speed = speed_tensor.as_numpy().astype(np.float32) if speed_tensor is not None \
+                    else np.ones((1, 1), dtype=np.float32)
 
-                if text_tensor is None or speaker_tensor is None:
-                    raise ValueError("TEXT and SPEAKER inputs are required.")
-
-
-                text = text_tensor.as_numpy()[0][0].decode("utf-8")
-                speaker = speaker_tensor.as_numpy()[0][0].decode("utf-8")
-                language = language_tensor.as_numpy()[0][0].decode("utf-8") if language_tensor is not None else self.default_language
-                language = language.lower()
-                
-                if speaker not in self.reference_styles:
-                    # 1. Load the tensor (may be 1D or 2D)
-                    ref_s_loaded = torch.load(f"/workspace/reference_styles/{speaker}_style.pt").detach().cpu().float()
-                    
-                    # 2. Check and reshape if it's 1D (D,) to make it 2D (1, D)
-                    if ref_s_loaded.dim() == 1:
-                        ref_s_loaded = ref_s_loaded.unsqueeze(0)
-                        
-                    self.reference_styles[speaker] = ref_s_loaded
-                    
-                ref_s = self.reference_styles[speaker]
-                
+                ref_s = self._load_reference_style(speaker)
                 token_ids = self._text_to_tokens(text, language, speaker)
-                
-                token_array = np.asarray(token_ids, dtype=np.int64)
-                
-                token_tensor_torch = torch.from_numpy(token_array).unsqueeze(0)
-                
-                print(f"token_array changes:  {token_array}")
-                
-                # === Create input lengths and mask ===
-                input_lengths = torch.LongTensor([token_array.shape[-1]])
-                text_mask = self.length_to_mask(input_lengths)  # Boolean mask
-                attention_mask = (~text_mask).int()       
-                
-                
-                alpha = torch.tensor([0.3], dtype=torch.float32)
-                beta = torch.tensor([0.7], dtype=torch.float32)
-                
-                
-                # === Move to CPU and convert to numpy ===
-                out_tokens_np = token_tensor_torch.detach().cpu().numpy() 
-                input_lengths_np = input_lengths.cpu().numpy().astype(np.int64)
-                attention_mask_np = attention_mask.cpu().numpy().astype(np.int64)
-                text_mask_np = text_mask.cpu().numpy()
-                ref_s_np = ref_s.detach().cpu().float().numpy()
-                
-                alpha_np = alpha.detach().cpu().float().numpy().astype(np.float32)
-                beta_np = beta.detach().cpu().float().numpy().astype(np.float32)
-                
-                # === Wrap as Triton tensors ===
-                out_tokens = pb_utils.Tensor("TOKENS", out_tokens_np)
-                out_inp_lengths = pb_utils.Tensor("INPUT_LENGTHS", input_lengths_np)
-                out_text_mask = pb_utils.Tensor("TEXT_MASK", text_mask_np)
-                out_attention_mask = pb_utils.Tensor("ATTENTION_MASK", attention_mask_np)
-                out_ref_s = pb_utils.Tensor("REF_S", ref_s_np)
-                
-                out_alpha = pb_utils.Tensor("ALPHA", alpha_np)
-                out_beta = pb_utils.Tensor("BETA", beta_np)
-                
-                speed_out_tensor = pb_utils.Tensor(
-                    "SPEED_OUT", 
-                    speed_tensor.as_numpy() # Shape is (1, 1)
-                )
-                
-                # embedding_scale_out_tensor = pb_utils.Tensor(
-                #     "EMBEDDING_SCALE_OUT", 
-                #     embedding_scale_tensor.as_numpy() # Shape is (1, 1)
-                # )
-                
 
-                responses.append(pb_utils.InferenceResponse(output_tensors=[out_alpha, out_beta, out_tokens, out_inp_lengths, out_text_mask, out_attention_mask,out_ref_s,speed_out_tensor]))
-            except Exception as exc:  # pragma: no cover - propagated as Triton error
-                err = pb_utils.TritonError(f"Frontend preprocessing failed: {exc}")
-                responses.append(pb_utils.InferenceResponse(output_tensors=[], error=err))
+                tokens = np.asarray(token_ids, dtype=np.int64)[None, :]
+                input_lengths = np.array([tokens.shape[-1]], dtype=np.int64)
+                text_mask = self._length_to_mask(input_lengths)
+                attention_mask = (~text_mask).astype(np.int64)
+
+                # Style-blend weights. Baked in here because int_steps_1 takes
+                # them as graph inputs; expose them as ensemble inputs if they
+                # ever need to be per-request.
+                alpha = np.array([0.3], dtype=np.float32)
+                beta = np.array([0.7], dtype=np.float32)
+
+                responses.append(pb_utils.InferenceResponse(output_tensors=[
+                    pb_utils.Tensor("ALPHA", alpha),
+                    pb_utils.Tensor("BETA", beta),
+                    pb_utils.Tensor("TOKENS", tokens),
+                    pb_utils.Tensor("INPUT_LENGTHS", input_lengths),
+                    pb_utils.Tensor("TEXT_MASK", text_mask),
+                    pb_utils.Tensor("ATTENTION_MASK", attention_mask),
+                    pb_utils.Tensor("REF_S", ref_s),
+                    pb_utils.Tensor("SPEED_OUT", speed),
+                ]))
+            except Exception as exc:
+                responses.append(pb_utils.InferenceResponse(
+                    output_tensors=[],
+                    error=pb_utils.TritonError(f"frontend failed: {exc}"),
+                ))
 
         return responses
 

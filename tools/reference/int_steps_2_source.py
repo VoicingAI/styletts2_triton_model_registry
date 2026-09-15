@@ -1,3 +1,28 @@
+"""Reference source for triton_model_repoistory_with_diffusion/int_steps_2.
+
+NOT a live Triton backend. `int_steps_2/config.pbtxt` declares the onnxruntime
+backend and the directory ships a traced `model.onnx`, so this file never ran —
+it is kept because it is the only readable record of what that graph computes,
+and the graph has no other exporter in this repo.
+
+The graph is pure tensor arithmetic with no weights, so it is speaker- and
+checkpoint-independent: it is copied from the template rather than re-exported
+per model.
+
+What it does, given per-token duration logits:
+  1. sigmoid + sum over the 50 duration bins -> a frame count per token
+  2. divide by the requested speed, round, clamp to >= 1
+  3. force the first and last token to one frame, and cap the second-to-last
+  4. build the [tokens, frames] alignment matrix from the cumulative durations
+  5. expand the prosody features (D_OUT) and the text encoding (T_EN) to frames
+
+Note the `hifigan_mode` bug preserved below: it is assigned `True` but compared
+against the string `"hifigan"`, so the one-frame shift never runs. The traced
+`model.onnx` has the same behaviour. `StyleTTS2Synth.synthesize` in
+common_code/inference_core.py *does* apply the shift, so torch and Triton
+output differ for hifigan decoders. Fixing it means re-tracing this graph.
+"""
+
 import json
 import os
 import re

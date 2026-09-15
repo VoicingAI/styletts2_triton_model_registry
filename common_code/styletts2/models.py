@@ -772,10 +772,17 @@ def build_model(args, bert):
 
 
 def build_model_onnx(args, bert_hidden_size, bert_max_position_embeddings):
+    """Build the torch model with PLBERT left out.
+
+    Takes PLBERT's dimensions rather than the module itself: the caller runs
+    BERT from an onnxruntime session (see
+    ``inference_core.StyleTTS2Synth``), so the returned Munch deliberately has
+    no ``bert`` entry. Everything else matches :func:`build_model`.
+    """
     assert args.decoder.type in ['istftnet', 'hifigan'], 'Decoder type unknown'
     
     if args.decoder.type == "istftnet":
-        from Modules.istftnet import Decoder
+        from .Modules.istftnet import Decoder
         decoder = Decoder(dim_in=args.hidden_dim, style_dim=args.style_dim, dim_out=args.n_mels,
                 resblock_kernel_sizes = args.decoder.resblock_kernel_sizes,
                 upsample_rates = args.decoder.upsample_rates,
@@ -784,7 +791,7 @@ def build_model_onnx(args, bert_hidden_size, bert_max_position_embeddings):
                 upsample_kernel_sizes=args.decoder.upsample_kernel_sizes, 
                 gen_istft_n_fft=args.decoder.gen_istft_n_fft, gen_istft_hop_size=args.decoder.gen_istft_hop_size) 
     else:
-        from Modules.hifigan import Decoder
+        from .Modules.hifigan import Decoder
         decoder = Decoder(dim_in=args.hidden_dim, style_dim=args.style_dim, dim_out=args.n_mels,
                 resblock_kernel_sizes = args.decoder.resblock_kernel_sizes,
                 upsample_rates = args.decoder.upsample_rates,

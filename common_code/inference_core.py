@@ -26,6 +26,9 @@ torch.backends.cudnn.deterministic = True
 torch.set_float32_matmul_precision("high")
 torch.backends.cudnn.allow_tf32 = False
 
+_TRAILING_SAMPLES_TO_DROP = 50
+
+
 def load_plbert_only(plbert_dir):
     return load_plbert(plbert_dir)
 
@@ -75,6 +78,7 @@ class StyleTTS2Synth:
         self.ref_audio_dir = ref_audio_dir
         self.reference_styles = {}
         self.alpha, self.beta = 0.3, 0.7
+        self.default_sampler_steps = 6
 
         cfg_path = os.path.join(model_dir, "config_ft.yml")
         if not os.path.isfile(cfg_path):
@@ -133,10 +137,8 @@ class StyleTTS2Synth:
         if not os.path.isfile(ref_path):
             raise FileNotFoundError(f"Reference audio not found for speaker '{speaker}' at {ref_path}")
 
-        wave, sr = librosa.load(ref_path, sr=24000)
+        wave, _ = librosa.load(ref_path, sr=24000)
         audio, _ = librosa.effects.trim(wave, top_db=30)
-        if sr != 24000:
-            audio = librosa.resample(audio, orig_sr=sr, target_sr=24000)
 
         wave_tensor = torch.from_numpy(audio).float().to(self.device)
         mel_tensor = self._mel_transform(wave_tensor.unsqueeze(0))
@@ -151,7 +153,7 @@ class StyleTTS2Synth:
         return ref
 
     def synthesize(self, tokens: torch.LongTensor, speaker: str, speed: float, diffusion_steps: int | None = 6) -> np.ndarray:
-        device = self.device
+        device = torch.device(self.device)
         tokens = tokens.to(device).unsqueeze(0)
         input_lengths = torch.LongTensor([tokens.shape[-1]]).to(device)
         text_mask = self._length_to_mask(input_lengths)
@@ -160,9 +162,17 @@ class StyleTTS2Synth:
 
         model = self.model
         t_en = model.text_encoder(tokens, input_lengths, text_mask)
-        attention_mask = (~text_mask).int()
-        
-        bert_dur = model.bert(tokens, attention_mask=(~text_mask).int())
+        attention_mask = (~text_mask).to(torch.int64)
+
+        bert_dur = torch.from_numpy(
+            self.bert_session.run(
+                ["BERT_DUR"],
+                {
+                    "TOKENS": tokens.cpu().numpy().astype(np.int64),
+                    "ATTENTION_MASK": attention_mask.cpu().numpy().astype(np.int64),
+                },
+            )[0]
+        ).to(device)
         d_en = model.bert_encoder(bert_dur).transpose(-1, -2)
 
         steps = diffusion_steps if diffusion_steps is not None else self.default_sampler_steps
@@ -226,11 +236,11 @@ class StyleTTS2Synth:
 
         out = model.decoder(asr, F0_pred, N_pred, ref)
         wav = out.squeeze().detach().cpu().numpy()
-        if wav.shape[0] > 50:
-            wav = wav[:-50]
-        
-        torch.cuda.empty_cache()
-        torch.cuda.ipc_collect()
-                    
-        
+        # The vocoder's last few output frames are padding artefacts.
+        if wav.shape[0] > _TRAILING_SAMPLES_TO_DROP:
+            wav = wav[:-_TRAILING_SAMPLES_TO_DROP]
+
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
+
         return wav.astype(np.float32, copy=False)
